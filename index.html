@@ -20,19 +20,36 @@
     align-items: center;
     justify-content: space-between;
     box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+    flex-wrap: wrap;
+    gap: 10px;
   }
 
   header h1 {
     margin: 0;
     font-size: 1.8em;
-    letter-spacing: 0.5px;
+  }
+
+  .controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  #category {
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: none;
+    background: #fff;
+    color: #333;
+    font-size: 1em;
+    cursor: pointer;
   }
 
   #search {
     padding: 8px 12px;
     border: none;
     border-radius: 8px;
-    width: 250px;
+    width: 220px;
     font-size: 1em;
     outline: none;
   }
@@ -128,12 +145,12 @@
   }
 
   @media (max-width: 600px) {
-    header {
+    .controls {
       flex-direction: column;
-      gap: 10px;
+      width: 100%;
     }
-    #search {
-      width: 90%;
+    #search, #category {
+      width: 100%;
     }
   }
 </style>
@@ -144,22 +161,38 @@
 
 <header>
   <h1>🎬 Movie Index</h1>
-  <input type="text" id="search" placeholder="Search movies...">
+  <div class="controls">
+    <select id="category">
+      <option value="netflix">Netflix</option>
+      <option value="amazon">Amazon</option>
+      <option value="hbo">HBO</option>
+      <option value="local">Local Upload</option>
+    </select>
+    <input type="text" id="search" placeholder="Search movies...">
+  </div>
 </header>
 
 <div class="container" id="movies"></div>
 
 <script>
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwSoVNuzbgC82WJ9UzSU-nCIo4JIiP1Av-qPdpjWzbcC4LJPrMwooQVfCFkotbL2voVfA/exec";
 const OMDB_API_KEY = "406b9b64";
 const TMDB_API_KEY = "d15ed461116703666fe13069e7f5341c";
-
-// gunakan proxy untuk menghindari error CORS
 const PROXY = "https://api.allorigins.win/raw?url=";
 
-async function fetchMovies() {
+// 🗂️ Mapping folder ID untuk tiap kategori
+const FOLDER_MAP = {
+  netflix: "1AoexTJ4LlZHzIJSfhAMOBhogh-wnEEON", // Ganti dengan folder ID aslimu
+  amazon: "1sN1PHySFrcAKBVdMsCZ1WTnsGbS-xnUn",
+  hbo: "#",
+  local: "#"
+};
+
+async function fetchMovies(folderKey) {
+  const folderId = FOLDER_MAP[folderKey];
+  if (!folderId) return alert("Folder ID tidak ditemukan untuk kategori ini.");
+
   setProgress(10);
-  const res = await fetch(SCRIPT_URL);
+  const res = await fetch(`https://script.google.com/macros/s/AKfycbwSoVNuzbgC82WJ9UzSU-nCIo4JIiP1Av-qPdpjWzbcC4LJPrMwooQVfCFkotbL2voVfA/exec?folderId=${folderId}`);
   setProgress(40);
   const files = await res.json();
   setProgress(70);
@@ -168,39 +201,31 @@ async function fetchMovies() {
   setTimeout(() => setProgress(0), 800);
 }
 
-// ambil poster dari OMDb dan fallback ke TMDb
 async function getPoster(title) {
   const cleanTitle = title
-    .replace(/\b(1080p|720p|480p|WEB[-_. ]?DL|WEBRip|HDRip|BluRay|NF|AMZN|DDP5\.1|H\.264|x264|x265|UCUP|APR[T]?|UCU[P]?|NFWEB|HDTV|CAM|TS|DVDRip|BRRip)\b/gi, "")
+    .replace(/\b(1080p|720p|WEB[-_. ]?DL|WEBRip|HDRip|BluRay|NF|AMZN|DDP5\.1|H\.264|x264|UCUP|APR[T]?|UCU[P]?|NFWEB|S\d{2}E\d{2})\b/gi, "")
     .replace(/\./g, " ")
     .replace(/\s{2,}/g, " ")
     .trim();
 
-  // 1️⃣ Try OMDb (via proxy)
+  // OMDb
   try {
     const omdbRes = await fetch(PROXY + encodeURIComponent(`https://www.omdbapi.com/?t=${encodeURIComponent(cleanTitle)}&apikey=${OMDB_API_KEY}`));
     const omdbData = await omdbRes.json();
     if (omdbData.Poster && omdbData.Poster !== "N/A") return omdbData.Poster;
-  } catch (e) {
-    console.warn("OMDb failed:", e);
-  }
+  } catch {}
 
-  // 2️⃣ Fallback ke TMDb (via proxy)
+  // TMDb
   try {
     const tmdbRes = await fetch(PROXY + encodeURIComponent(`https://api.themoviedb.org/3/search/movie?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(cleanTitle)}`));
     const tmdbData = await tmdbRes.json();
     if (tmdbData.results && tmdbData.results.length > 0) {
-      const movie = tmdbData.results[0];
-      if (movie.poster_path)
-        return `https://image.tmdb.org/t/p/w500${movie.poster_path}`;
-      if (movie.backdrop_path)
-        return `https://image.tmdb.org/t/p/w500${movie.backdrop_path}`;
+      const m = tmdbData.results[0];
+      if (m.poster_path) return `https://image.tmdb.org/t/p/w500${m.poster_path}`;
+      if (m.backdrop_path) return `https://image.tmdb.org/t/p/w500${m.backdrop_path}`;
     }
-  } catch (e) {
-    console.warn("TMDb failed:", e);
-  }
+  } catch {}
 
-  // 3️⃣ Fallback placeholder
   return "https://via.placeholder.com/300x450?text=No+Image";
 }
 
@@ -238,7 +263,6 @@ function setProgress(percent) {
   document.getElementById("progressBar").style.width = percent + "%";
 }
 
-// fitur pencarian
 document.getElementById("search").addEventListener("input", e => {
   const val = e.target.value.toLowerCase();
   document.querySelectorAll(".card").forEach(card => {
@@ -246,7 +270,12 @@ document.getElementById("search").addEventListener("input", e => {
   });
 });
 
-fetchMovies();
+document.getElementById("category").addEventListener("change", e => {
+  fetchMovies(e.target.value);
+});
+
+// default: tampilkan kategori pertama
+fetchMovies("netflix");
 </script>
 
 </body>
