@@ -192,7 +192,7 @@ async function fetchMovies(folderKey) {
   if (!folderId) return alert("Folder ID tidak ditemukan untuk kategori ini.");
 
   setProgress(10);
-  const res = await fetch(`https://script.google.com/macros/s/AKfycbwSoVNuzbgC82WJ9UzSU-nCIo4JIiP1Av-qPdpjWzbcC4LJPrMwooQVfCFkotbL2voVfA/exec?folderId=${folderId}`);
+  const res = await fetch(`https://script.google.com/macros/s/AKfycbzm5CK-370onMyIT2cL6wpbACN8o5IkZAqYh7Sd5E4YOJlduo9ioxOQPLtivDc46FCJgQ/exec?folderId=${folderId}`);
   setProgress(40);
   const files = await res.json();
   setProgress(70);
