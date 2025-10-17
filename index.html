@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Streaming Hub Auto Update</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #0f0f0f; color: white; margin: 0; padding: 0; }
+    header { background: #1a1a1a; padding: 20px; text-align: center; font-size: 1.5em; }
+    .film-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; padding: 20px; }
+    .film-card { background: #1c1c1c; border-radius: 10px; padding: 10px; text-align: center; transition: transform 0.2s; }
+    .film-card:hover { transform: scale(1.05); }
+    .film-card img { width: 100%; border-radius: 8px; }
+    .film-card h3 { margin: 10px 0 5px; }
+    .film-card p { margin: 0; color: #ccc; font-size: 0.9em; }
+  </style>
+</head>
+<body>
+  <header>🎬 Streaming Hub (Auto Update dari Google Drive)</header>
+  <section class="film-list" id="film-list">Memuat daftar film...</section>
+
+  <script>
+    const folderId = "YOUR_FOLDER_ID"; // 🔹 Ganti dengan ID folder Drive kamu
+    const apiKey = "YOUR_API_KEY"; // 🔹 Ganti dengan API Key kamu
+
+    async function loadFilms() {
+      const res = await fetch(`https://www.googleapis.com/drive/v3/files?q='${folderId}'+in+parents+and+mimeType='application/json'&key=${apiKey}`);
+      const data = await res.json();
+      const list = document.getElementById("film-list");
+      list.innerHTML = "";
+
+      if (!data.files || data.files.length === 0) {
+        list.innerHTML = "<p>Tidak ada data film ditemukan.</p>";
+        return;
+      }
+
+      for (const file of data.files) {
+        const contentRes = await fetch(`https://www.googleapis.com/drive/v3/files/${file.id}?alt=media&key=${apiKey}`);
+        const film = await contentRes.json();
+        const div = document.createElement("div");
+        div.className = "film-card";
+        div.innerHTML = `
+          <img src="${film.poster}" alt="${film.judul}">
+          <h3>${film.judul}</h3>
+          <p>${film.genre} • ${film.tahun}</p>
+        `;
+        list.appendChild(div);
+      }
+    }
+
+    loadFilms();
+  </script>
+</body>
+</html>
