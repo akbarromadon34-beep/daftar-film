@@ -1,35 +1,30 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>🎬 Movie Index</title>
 <style>
   body {
-    font-family: 'Segoe UI', Arial, sans-serif;
+    font-family: 'Segoe UI', sans-serif;
     background-color: #16002b;
     color: #fff;
     margin: 0;
-    padding: 0;
   }
 
   header {
     background: linear-gradient(90deg, #6a0dad, #9b30ff);
     padding: 15px 25px;
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
     box-shadow: 0 3px 10px rgba(0,0,0,0.3);
-    flex-wrap: wrap;
   }
 
   header h1 {
     margin: 0;
     font-size: 1.8em;
-    letter-spacing: 0.5px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
   }
 
   .controls {
@@ -57,8 +52,7 @@
     left: 0;
     width: 100%;
     height: 4px;
-    background: rgba(255, 255, 255, 0.1);
-    z-index: 999;
+    background: rgba(255,255,255,0.1);
   }
 
   #progressBar {
@@ -78,48 +72,34 @@
   .card {
     background: #250045;
     border-radius: 12px;
-    box-shadow: 0 5px 10px rgba(0,0,0,0.3);
     overflow: hidden;
+    box-shadow: 0 5px 10px rgba(0,0,0,0.3);
     display: flex;
     flex-direction: column;
-    transition: transform 0.2s, box-shadow 0.2s;
+    transition: transform 0.2s;
   }
 
   .card:hover {
     transform: scale(1.03);
-    box-shadow: 0 8px 18px rgba(0,0,0,0.5);
   }
 
   .card img {
     width: 100%;
     height: 380px;
     object-fit: cover;
-    background: #111;
   }
 
   .card-content {
     padding: 12px 15px;
-    flex: 1;
     display: flex;
     flex-direction: column;
+    flex: 1;
   }
 
-  .card h3 {
-    font-size: 1em;
-    margin: 8px 0 5px;
-  }
+  .card h3 { margin: 6px 0; font-size: 1em; }
+  .card p { margin: 0; font-size: 0.9em; color: #ccc; }
 
-  .card p {
-    margin: 0;
-    font-size: 0.9em;
-    color: #ccc;
-  }
-
-  .download {
-    margin-top: auto;
-    text-align: center;
-  }
-
+  .download { text-align: center; margin-top: auto; }
   .download a {
     display: inline-block;
     margin-top: 10px;
@@ -128,34 +108,14 @@
     border-radius: 6px;
     color: #fff;
     text-decoration: none;
-    transition: background 0.2s;
   }
 
-  .download a:hover {
-    background: #b84fff;
-  }
+  .download a:hover { background: #b84fff; }
 
   .empty {
     text-align: center;
     padding: 50px;
     color: #aaa;
-  }
-
-  @media(max-width:600px) {
-    header {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 10px;
-    }
-
-    .controls {
-      flex-direction: column;
-      width: 100%;
-    }
-
-    #search, #folderSelect, #typeSelect {
-      width: 100%;
-    }
   }
 </style>
 </head>
@@ -187,46 +147,52 @@ const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwSoVNuzbgC82WJ9UzSU
 const TMDB_API_KEY = "d15ed461116703666fe13069e7f5341c";
 const posterCache = {};
 
-function setProgress(percent) {
-  document.getElementById("progressBar").style.width = percent + "%";
+function setProgress(p){ document.getElementById("progressBar").style.width = p + "%"; }
+
+function detectType(name){
+  return /S\d{1,2}E\d{1,2}/i.test(name) ? "tv" : "movie";
 }
 
-function detectType(title) {
-  return /S\\d{1,2}E\\d{1,2}/i.test(title) ? "tv" : "movie";
-}
-
-function cleanTitleForSearch(title) {
+function cleanTitleForSearch(title){
   return title
-    .replace(/\.[^.]+$/, "") // hapus ekstensi file
-    .replace(/\b(1080p|720p|480p|x264|x265|H\.?264|H\.?265|HEVC|WEB[-_. ]?DL|WEBRip|BluRay|BRRip|HDRip|NF|AMZN|AAC2?\.0|DDP5\.1|Atmos|Dual|Audio)\b/gi, "")
-    .replace(/[\[\]()._-]+/g, " ")
-    .replace(/\b\d{3,4}p\b/g, "")
+    .replace(/\.[^.]+$/, "") // remove extension
+    .replace(/\b(1080p|720p|480p|x264|x265|H\.?264|H\.?265|HEVC|WEB.?DL|WEBRip|BluRay|NF|AMZN|AAC2?\.0|DDP5\.1|ASPRT|HDRip|Dual.Audio)\b/gi, "")
+    .replace(/[\[\]()_.-]+/g, " ")
     .replace(/\s{2,}/g, " ")
     .trim();
 }
 
-async function getPoster(title, type = "movie") {
-  if (posterCache[title]) return posterCache[title];
-  const cleanTitle = cleanTitleForSearch(title);
+async function getPoster(title, type="movie"){
+  if(posterCache[title]) return posterCache[title];
+  let query = cleanTitleForSearch(title);
+  const yearMatch = title.match(/\b(19|20)\d{2}\b/);
+  const year = yearMatch ? yearMatch[0] : "";
+  const endpoint = type === "tv" ? "tv" : "movie";
 
+  console.log(`🔍 TMDb search: "${query}" (${year}) [${endpoint}]`);
   try {
-    const yearMatch = title.match(/\b(19|20)\d{2}\b/);
-    const year = yearMatch ? yearMatch[0] : "";
-    const endpoint = type === "tv" ? "tv" : "movie";
+    // Pencarian pertama
+    let url = `https://api.themoviedb.org/3/search/${endpoint}?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}${year ? `&year=${year}` : ""}`;
+    let res = await fetch(url);
+    let data = await res.json();
 
-    const url = `https://api.themoviedb.org/3/search/${endpoint}?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(cleanTitle)}${year ? `&year=${year}` : ""}`;
-    const res = await fetch(url);
-    const data = await res.json();
+    // Jika gagal, coba pencarian tanpa tahun
+    if((!data.results || data.results.length === 0) && year){
+      console.log("🔁 Retry search without year:", query);
+      url = `https://api.themoviedb.org/3/search/${endpoint}?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}`;
+      res = await fetch(url);
+      data = await res.json();
+    }
 
-    if (data.results && data.results.length > 0 && data.results[0].poster_path) {
+    if(data.results && data.results.length > 0 && data.results[0].poster_path){
       const posterUrl = `https://image.tmdb.org/t/p/w500${data.results[0].poster_path}`;
       posterCache[title] = posterUrl;
       return posterUrl;
     } else {
-      console.warn("No TMDb poster for:", cleanTitle);
+      console.warn("⚠️ No TMDb poster for:", query);
     }
-  } catch (err) {
-    console.error("TMDb fetch error:", err);
+  } catch(e){
+    console.error("❌ TMDb fetch error:", e);
   }
 
   const fallback = "https://placehold.co/300x450/000000/FFFFFF?text=No+Poster";
@@ -234,73 +200,64 @@ async function getPoster(title, type = "movie") {
   return fallback;
 }
 
-async function fetchMovies(url = SCRIPT_URL) {
-  setProgress(10);
+async function fetchMovies(url = SCRIPT_URL){
+  setProgress(15);
   const res = await fetch(url);
-  setProgress(40);
   const files = await res.json();
-  setProgress(70);
+  setProgress(50);
   await renderMovies(files);
   setProgress(100);
-  setTimeout(() => setProgress(0), 800);
+  setTimeout(()=>setProgress(0),800);
 }
 
-async function renderMovies(files) {
+async function renderMovies(files){
   const container = document.getElementById("movies");
   container.innerHTML = "";
-  if (!files || files.length === 0) {
+  if(!files || files.length === 0){
     container.innerHTML = `<div class="empty">No movies found</div>`;
     return;
   }
 
   const filterType = document.getElementById("typeSelect").value;
+  for(const f of files){
+    const type = detectType(f.name);
+    if(filterType !== "all" && filterType !== type) continue;
 
-  for (const file of files) {
-    const type = detectType(file.name);
-    if (filterType !== "all" && filterType !== type) continue;
-
-    const cleanName = file.name.replace(/\.[^/.]+$/, "");
-    const yearMatch = cleanName.match(/\b(19|20)\d{2}\b/);
+    const cleanName = cleanTitleForSearch(f.name);
+    const yearMatch = f.name.match(/\b(19|20)\d{2}\b/);
     const year = yearMatch ? yearMatch[0] : "";
-    const title = cleanTitleForSearch(cleanName.replace(year, "")).trim();
-    const displayName = year ? `${title} (${year})` : title;
+    const title = year ? `${cleanName.replace(year, "").trim()} (${year})` : cleanName;
 
-    const poster = await getPoster(file.name, type);
+    const poster = await getPoster(f.name, type);
+
     const card = document.createElement("div");
     card.className = "card";
     card.innerHTML = `
-      <img src="${poster}" alt="${displayName}" loading="lazy">
+      <img src="${poster}" alt="${title}" loading="lazy">
       <div class="card-content">
-        <h3>${displayName}</h3>
-        <p>${file.size} — ${file.folderName}</p>
-        <div class="download">
-          <a href="${file.url}" target="_blank">⬇️ Download</a>
-        </div>
-      </div>
-    `;
+        <h3>${title}</h3>
+        <p>${f.size} — ${f.folderName}</p>
+        <div class="download"><a href="${f.url}" target="_blank">⬇️ Download</a></div>
+      </div>`;
     container.appendChild(card);
   }
 }
 
-// Pencarian
-document.getElementById("search").addEventListener("input", e => {
+// --- filters ---
+document.getElementById("search").addEventListener("input", e=>{
   const val = e.target.value.toLowerCase();
-  document.querySelectorAll(".card").forEach(card => {
+  document.querySelectorAll(".card").forEach(card=>{
     card.style.display = card.textContent.toLowerCase().includes(val) ? "" : "none";
   });
 });
 
-// Filter kategori
-document.getElementById("folderSelect").addEventListener("change", async e => {
+document.getElementById("folderSelect").addEventListener("change", async e=>{
   const folderId = e.target.value;
   const url = folderId ? `${SCRIPT_URL}?folderId=${folderId}` : SCRIPT_URL;
   await fetchMovies(url);
 });
 
-// Filter Movie / Series
-document.getElementById("typeSelect").addEventListener("change", async () => {
-  await fetchMovies();
-});
+document.getElementById("typeSelect").addEventListener("change", async ()=>{ await fetchMovies(); });
 
 fetchMovies();
 </script>
