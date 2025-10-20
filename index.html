@@ -50,17 +50,19 @@
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwSoVNuzbgC82WJ9UzSU-nCIo4JIiP1Av-qPdpjWzbcC4LJPrMwooQVfCFkotbL2voVfA/exec";
 const OMDB_API_KEY = "406b9b64";
 const TMDB_API_KEY = "d15ed461116703666fe13069e7f5341c";
-const GDTOT_EMAIL = "adwik2860@gmail.com"; // <== GANTI dengan email GDToT kamu
-const GDTOT_API_KEY = "kVTKqsfQlU39uQnqh2Zb4LQwneUNU'"; // <== GANTI dengan API token kamu
+
+// ==== GDToT Config ====
+const GDTOT_EMAIL = "adwik2860@gmail.com"; // Ganti dgn email GDToT kamu
+const GDTOT_API_KEY = "kVTKqsfQlU39uQnqh2Zb4LQwneUNU"; // Ganti dgn API key kamu
 
 const posterCache = {};
 
 function setProgress(percent){document.getElementById("progressBar").style.width=percent+"%";}
 
-// Fungsi untuk mirror otomatis ke GDToT
+// === Fungsi untuk otomatis mirror ke GDToT ===
 async function mirrorToGDTot(url) {
   const cache = JSON.parse(localStorage.getItem("gd_cache") || "{}");
-  if (cache[url]) return cache[url]; // pakai hasil sebelumnya
+  if (cache[url]) return cache[url]; // pakai hasil mirror sebelumnya
 
   try {
     const body = new URLSearchParams();
@@ -73,19 +75,21 @@ async function mirrorToGDTot(url) {
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body
     });
+
     const data = await res.json();
 
     if (data.status === "success" && data.url) {
       cache[url] = data.url;
       localStorage.setItem("gd_cache", JSON.stringify(cache));
+      console.log("✅ Mirror berhasil:", data.url);
       return data.url;
     } else {
-      console.warn("Mirror gagal:", data);
+      console.warn("⚠️ Mirror gagal:", data);
       return url; // fallback ke link asli
     }
   } catch (err) {
-    console.error("Error mirroring:", err);
-    return url; // fallback ke link asli
+    console.error("❌ Error mirroring:", err);
+    return url;
   }
 }
 
@@ -107,7 +111,6 @@ function cleanTitleForSearch(title){
     .replace(/\b(1080p|720p|2160p|4K|WEB[-_. ]?DL|WEBRip|HDRip|BluRay|NF|AMZN|DDP5\.1|H\.264|x264|UCUP|APRT|Atmos|UCU[P]?|NFWEB)\b/gi, "")
     .replace(/\s+/g, " ")
     .trim();
-
   if (/\bS\d{1,2}E\d{1,2}\b/i.test(clean)) {
     clean = clean.replace(/\bS\d{1,2}E\d{1,2}.*/i, "").trim();
   }
@@ -180,7 +183,7 @@ async function renderMovies(files){
     const displayName=year?`${title} (${year})`:title;
     const poster = await getPoster(displayName);
 
-    // Mirror otomatis ke GDToT
+    // === Mirror otomatis ke GDToT ===
     const gdLink = await mirrorToGDTot(file.url);
 
     const card=document.createElement("div");
