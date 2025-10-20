@@ -5,32 +5,27 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>🎬 Movie Index</title>
 <style>
-/* --- Styling --- */
-body{font-family:'Segoe UI',Arial,sans-serif;background:#16002b;color:#fff;margin:0}
-header{background:linear-gradient(90deg,#6a0dad,#9b30ff);padding:15px 25px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 3px 10px rgba(0,0,0,.3);flex-wrap:wrap}
-header h1{margin:0;font-size:1.8em;letter-spacing:.5px}
-.controls{display:flex;gap:10px;align-items:center}
-#search,#folderSelect{padding:8px 12px;border:none;border-radius:8px;font-size:1em;outline:none}
-#folderSelect{background:#fff;color:#333}
-#progressBarContainer{position:fixed;top:0;left:0;width:100%;height:4px;background:rgba(255,255,255,.1);z-index:999}
-#progressBar{height:4px;width:0%;background:#ff66ff;transition:width .3s}
-.container{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:18px;padding:25px}
-.card{background:#250045;border-radius:12px;box-shadow:0 5px 10px rgba(0,0,0,.3);overflow:hidden;display:flex;flex-direction:column;transition:transform .2s,box-shadow .2s}
-.card:hover{transform:scale(1.03);box-shadow:0 8px 18px rgba(0,0,0,.5)}
-.card img{width:100%;height:380px;object-fit:cover;background:#111}
-.card-content{padding:12px 15px;flex:1;display:flex;flex-direction:column}
-.card h3{font-size:1em;margin:8px 0 5px}
-.card p{margin:0;font-size:.9em;color:#ccc}
-.download{margin-top:auto;text-align:center}
-.download a{display:inline-block;margin-top:10px;padding:8px 15px;background:#9b30ff;border-radius:6px;color:#fff;text-decoration:none;transition:background .2s}
-.download a:hover{background:#b84fff}
-.empty{text-align:center;padding:50px;color:#aaa}
-.card-wrapper{position:relative}
-@media(max-width:600px){
-  header{flex-direction:column;align-items:flex-start;gap:10px}
-  .controls{flex-direction:column;width:100%}
-  #search,#folderSelect{width:100%}
-}
+  body {font-family:'Segoe UI',Arial,sans-serif;background-color:#16002b;color:#fff;margin:0;padding:0;}
+  header{background:linear-gradient(90deg,#6a0dad,#9b30ff);padding:15px 25px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 3px 10px rgba(0,0,0,0.3);flex-wrap:wrap;}
+  header h1{margin:0;font-size:1.8em;letter-spacing:0.5px;}
+  .controls{display:flex;gap:10px;align-items:center;}
+  #search,#folderSelect{padding:8px 12px;border:none;border-radius:8px;font-size:1em;outline:none;}
+  #folderSelect{background:#fff;color:#333;}
+  #progressBarContainer{position:fixed;top:0;left:0;width:100%;height:4px;background:rgba(255,255,255,0.1);z-index:999;}
+  #progressBar{height:4px;width:0%;background:#ff66ff;transition:width 0.3s;}
+  .container{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:18px;padding:25px;}
+  .card{background:#250045;border-radius:12px;box-shadow:0 5px 10px rgba(0,0,0,0.3);overflow:hidden;display:flex;flex-direction:column;transition:transform 0.2s,box-shadow 0.2s;}
+  .card:hover{transform:scale(1.03);box-shadow:0 8px 18px rgba(0,0,0,0.5);}
+  .card img{width:100%;height:380px;object-fit:cover;background:#111;}
+  .card-content{padding:12px 15px;flex:1;display:flex;flex-direction:column;}
+  .card h3{font-size:1em;margin:8px 0 5px;}
+  .card p{margin:0;font-size:0.9em;color:#ccc;}
+  .download{margin-top:auto;text-align:center;}
+  .download a{display:inline-block;margin-top:10px;padding:8px 15px;background:#9b30ff;border-radius:6px;color:#fff;text-decoration:none;transition:background 0.2s;}
+  .download a:hover{background:#b84fff;}
+  .empty{text-align:center;padding:50px;color:#aaa;}
+  .card-wrapper{position:relative;}
+  @media(max-width:600px){header{flex-direction:column;align-items:flex-start;gap:10px;}.controls{flex-direction:column;width:100%;}#search,#folderSelect{width:100%;}}
 </style>
 </head>
 <body>
@@ -52,165 +47,188 @@ header h1{margin:0;font-size:1.8em;letter-spacing:.5px}
 <div class="container" id="movies"></div>
 
 <script>
-/* =======================
-   KONFIGURASI ENDPOINT
-   ======================= */
-// LIST_URL: Apps Script untuk mengambil daftar file (GET)
-// MIRROR_URL: Apps Script untuk membuat/mengambil link mirror Sharer (POST)
-const LIST_URL   = "https://script.google.com/macros/s/AKfycbwejRqEi3AlKXtIDNRGZ6llLuDU6EhixEsG2z6-44JvoD4yJu8t36h-MpkiA1lc7PqzvA/exec";
-const MIRROR_URL = "https://script.google.com/macros/s/AKfycbw03Ms12ikF2Ct9llJjgn2KhmXoLcvTYNAbW4F0Oe7W_iqvX-Sib8P6QbBF5mApCc4mFA/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwSoVNuzbgC82WJ9UzSU-nCIo4JIiP1Av-qPdpjWzbcC4LJPrMwooQVfCFkotbL2voVfA/exec";
+const OMDB_API_KEY = "406b9b64";
+const TMDB_API_KEY = "d15ed461116703666fe13069e7f5341c";
 
-// OMDb (poster)
-const OMDB_API_KEY = "10eca265";
+// ==== GDToT Config ====
+const GDTOT_EMAIL = "adwik2860@gmail.com"; // Ganti dgn email GDToT kamu
+const GDTOT_API_KEY = "kVTKqsfQlU39uQnqh2Zb4LQwneUNU"; // Ganti dgn API key kamu
 
-// (opsional) credential Sharer yang kamu kirim ke Apps Script, bukan ke pihak lain
-const SHARER_EMAIL = "adwik2860@gmail.com";
-const SHARER_KEY   = "105662444125919720943";
+const posterCache = {};
 
-/* =======================
-   UTIL & STATE
-   ======================= */
-const posterCache = Object.create(null);
+function setProgress(percent){document.getElementById("progressBar").style.width=percent+"%";}
 
-function setProgress(p){ document.getElementById("progressBar").style.width = (p||0) + "%"; }
+// === GDToT Mirror (dengan pengecekan error) ===
+async function mirrorToGDTot(url) {
+  const cache = JSON.parse(localStorage.getItem("gd_cache") || "{}");
+  if (cache[url]) return cache[url];
 
-function stripExt(name){ return (name||"").replace(/\.[^/.]+$/,"").trim(); }
+  try {
+    const body = new URLSearchParams();
+    body.append("email", GDTOT_EMAIL);
+    body.append("api_token", GDTOT_API_KEY);
+    body.append("url", url);
 
-function formatSize(size){
-  if (size == null) return "";
-  const n = Number(size);
-  if (!Number.isFinite(n)) return String(size);
-  const units = ["B","KB","MB","GB","TB"];
-  let i=0, val=n;
-  while(val>=1024 && i<units.length-1){ val/=1024; i++; }
-  return `${val.toFixed(val<10 && i>0 ? 1 : 0)} ${units[i]}`;
-}
+    const res = await fetch("https://new.gdtot.com/api/upload/link", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body
+    });
 
-/* =======================
-   FETCH HELPERS
-   ======================= */
-async function fetchJSON(url, options){
-  try{
-    const res = await fetch(url, options);
-    if(!res.ok) throw new Error(`HTTP ${res.status}`);
-    return await res.json();
-  }catch(err){
-    console.warn("fetchJSON gagal:", url, err.message);
-    return null;
+    const text = await res.text();
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch {
+      console.warn("⚠️ GDToT respon bukan JSON:", text);
+      return url;
+    }
+
+    // Validasi respon
+    if (data.status === "success" && data.url) {
+      cache[url] = data.url;
+      localStorage.setItem("gd_cache", JSON.stringify(cache));
+      console.log("✅ Mirror berhasil:", data.url);
+      return data.url;
+    } else if (data.status === "error") {
+      console.warn(`⚠️ GDToT error: ${data.message || 'unknown error'}`);
+      return url;
+    } else {
+      console.warn("⚠️ Mirror gagal:", data);
+      return url;
+    }
+  } catch (err) {
+    console.error("❌ Error koneksi ke GDToT:", err);
+    return url;
   }
 }
 
-/* =======================
-   MIRROR (SERVER-SIDE)
-   ======================= */
-async function mirrorToSharer(originalUrl){
-  // Cache lokal agar tidak mirror berkali-kali
-  const cache = JSON.parse(localStorage.getItem("sharer_cache") || "{}");
-  if (cache[originalUrl]) return cache[originalUrl];
-
-  // Jangan pernah panggil gdtot/new.gdtot dari browser — biarkan Apps Script yang melakukan kalau perlu
-  const body = new URLSearchParams();
-  body.append("email", SHARER_EMAIL);
-  body.append("api_key", SHARER_KEY);
-  body.append("url", originalUrl);
-
-  const data = await fetchJSON(MIRROR_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body
-  });
-
-  // Jika Apps Script memberi URL mirror yang valid, simpan di cache
-  if (data && data.status === "success" && data.url){
-    cache[originalUrl] = data.url;
-    localStorage.setItem("sharer_cache", JSON.stringify(cache));
-    return data.url;
-  }
-
-  // Fallback: pakai URL asli agar tetap bisa diunduh tanpa error console
-  return originalUrl;
+async function fetchMovies(url=SCRIPT_URL){
+  setProgress(10);
+  const res=await fetch(url);
+  setProgress(40);
+  const files=await res.json();
+  setProgress(70);
+  await renderMovies(files);
+  setProgress(100);
+  setTimeout(()=>setProgress(0),800);
 }
 
-/* =======================
-   POSTER (OMDb)
-   ======================= */
+function cleanTitleForSearch(title){
+  let clean = title
+    .replace(/\.[^/.]+$/, "")
+    .replace(/\(.*?\)/, "")
+    .replace(/\b(1080p|720p|2160p|4K|WEB[-_. ]?DL|WEBRip|HDRip|BluRay|NF|AMZN|DDP5\.1|H\.264|x264|UCUP|APRT|Atmos|UCU[P]?|NFWEB)\b/gi, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (/\bS\d{1,2}E\d{1,2}\b/i.test(clean)) {
+    clean = clean.replace(/\bS\d{1,2}E\d{1,2}.*/i, "").trim();
+  }
+  return clean;
+}
+
 async function getPoster(title){
-  if (posterCache[title]) return posterCache[title];
-  let poster = "https://via.placeholder.com/300x450?text=No+Image";
-  try{
-    const data = await fetchJSON(`https://www.omdbapi.com/?t=${encodeURIComponent(title)}&apikey=${OMDB_API_KEY}`);
-    if (data && data.Poster && data.Poster !== "N/A") poster = data.Poster;
-  }catch(_){}
-  posterCache[title] = poster;
-  return poster;
+  if(posterCache[title]) return posterCache[title];
+  const cleanTitle = cleanTitleForSearch(title);
+
+  try {
+    const omdbRes = await fetch(`https://www.omdbapi.com/?t=${encodeURIComponent(cleanTitle)}&apikey=${OMDB_API_KEY}`);
+    const omdbData = await omdbRes.json();
+    if(omdbData.Poster && omdbData.Poster !== "N/A") {
+      posterCache[title] = omdbData.Poster;
+      return omdbData.Poster;
+    }
+  } catch(e) {}
+
+  try {
+    const movieRes = await fetch(`https://api.themoviedb.org/3/search/movie?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(cleanTitle)}`);
+    const movieData = await movieRes.json();
+    if(movieData.results?.length > 0){
+      const posterPath = movieData.results[0].poster_path;
+      if(posterPath){
+        const url = `https://image.tmdb.org/t/p/w500${posterPath}`;
+        posterCache[title] = url;
+        return url;
+      }
+    }
+  } catch(e) {}
+
+  try {
+    const tvRes = await fetch(`https://api.themoviedb.org/3/search/tv?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(cleanTitle)}`);
+    const tvData = await tvRes.json();
+    if(tvData.results?.length > 0){
+      const posterPath = tvData.results[0].poster_path;
+      if(posterPath){
+        const url = `https://image.tmdb.org/t/p/w500${posterPath}`;
+        posterCache[title] = url;
+        return url;
+      }
+    }
+  } catch(e) {}
+
+  posterCache[title] = "https://via.placeholder.com/300x450?text=No+Image";
+  return posterCache[title];
 }
 
-/* =======================
-   RENDER
-   ======================= */
 async function renderMovies(files){
-  const container = document.getElementById("movies");
-  container.innerHTML = "";
-
-  if (!Array.isArray(files) || files.length === 0){
-    container.innerHTML = `<div class="empty">No movies found</div>`;
+  const container=document.getElementById("movies");
+  container.innerHTML="";
+  if(!files||files.length===0){
+    container.innerHTML=`<div class="empty">No movies found</div>`;
     return;
   }
 
-  // Proses paralel: poster + mirror tiap file
-  const tasks = files.map(async (file) => {
-    const nameNoExt = stripExt(file?.name || "");
-    const [poster, mirrorLink] = await Promise.all([
-      getPoster(nameNoExt),
-      mirrorToSharer(file?.url || "")
-    ]);
+  let count=0;
+  for(const file of files){
+    count++;
+    if(count%5===0)setProgress((count/files.length)*100);
 
-    const card = document.createElement("div");
-    card.className = "card-wrapper";
-    card.innerHTML = `
-      <div class="card">
-        <img src="${poster}" alt="${nameNoExt}">
-        <div class="card-content">
-          <h3>${nameNoExt || "Untitled"}</h3>
-          <p>${formatSize(file?.size)} ${file?.folderName ? " — " + file.folderName : ""}</p>
-          <div class="download">
-            <a href="${mirrorLink}" target="_blank" rel="noopener noreferrer">⬇️ Download</a>
-          </div>
+    const cleanName=file.name.replace(/\.[^/.]+$/,"");
+    const parts=cleanName.split(/[.\s_-]+/);
+    const yearIndex=parts.findIndex(p=>/^\d{4}$/.test(p));
+    let title="",year="";
+    if(yearIndex!==-1){title=parts.slice(0,yearIndex).join(" ");year=parts[yearIndex];}
+    else{title=cleanName.replace(/\./g," ");}
+
+    const displayName=year?`${title} (${year})`:title;
+    const poster = await getPoster(displayName);
+
+    // === Mirror otomatis ke GDToT ===
+    const gdLink = await mirrorToGDTot(file.url);
+
+    const card=document.createElement("div");
+    card.className="card-wrapper";
+    const cardInner=document.createElement("div");
+    cardInner.className="card";
+    cardInner.innerHTML=`
+      <img src="${poster}" alt="${displayName}">
+      <div class="card-content">
+        <h3>${displayName}</h3>
+        <p>${file.size} — ${file.folderName}</p>
+        <div class="download">
+          <a href="${gdLink}" target="_blank">⬇️ Download</a>
         </div>
-      </div>`;
-    return card;
-  });
-
-  const nodes = await Promise.all(tasks);
-  nodes.forEach(n => container.appendChild(n));
+      </div>
+    `;
+    card.appendChild(cardInner);
+    container.appendChild(card);
+  }
 }
 
-/* =======================
-   LOAD & FILTER
-   ======================= */
-async function fetchMovies(url = LIST_URL){
-  setProgress(10);
-  const files = await fetchJSON(url);
-  setProgress(70);
-  await renderMovies(files || []);
-  setProgress(100);
-  setTimeout(()=>setProgress(0), 800);
-}
-
-document.getElementById("search").addEventListener("input", (e) => {
-  const val = e.target.value.toLowerCase();
-  document.querySelectorAll(".card-wrapper").forEach(wrap => {
-    wrap.style.display = wrap.textContent.toLowerCase().includes(val) ? "" : "none";
+document.getElementById("search").addEventListener("input",e=>{
+  const val=e.target.value.toLowerCase();
+  document.querySelectorAll(".card").forEach(card=>{
+    card.style.display=card.textContent.toLowerCase().includes(val)?"":"none";
   });
 });
 
-document.getElementById("folderSelect").addEventListener("change", async (e) => {
-  const id = e.target.value;
-  const url = id ? `${LIST_URL}?folderId=${encodeURIComponent(id)}` : LIST_URL;
+document.getElementById("folderSelect").addEventListener("change",async e=>{
+  const folderId=e.target.value;
+  const url=folderId?`${SCRIPT_URL}?folderId=${folderId}`:SCRIPT_URL;
   await fetchMovies(url);
 });
 
-// initial load
 fetchMovies();
 </script>
 </body>
