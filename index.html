@@ -188,31 +188,9 @@ async function fetchMovies(url = SCRIPT_URL) {
   setTimeout(() => setProgress(0), 800);
 }
 
-// Format judul agar rapi
-function formatTitle(rawName) {
-  let title = rawName
-    .replace(/\.[^.]+$/, "") // hapus ekstensi file
-    .replace(/\./g, " ") // titik jadi spasi
-    .replace(/\b(1080p|720p|WEB[-_. ]?DL|WEBRip|HDRip|BluRay|NF|AMZN|DDP5\.1|H\.264|x264|UCUP|APR[T]?|UCU[P]?|NFWEB|Atmos|mkv|mp4)\b/gi, "")
-    .replace(/\s{2,}/g, " ")
-    .trim();
-
-  // ambil tahun film jika ada
-  const yearMatch = title.match(/\b(19|20)\d{2}\b/);
-  let year = "";
-  if (yearMatch) {
-    year = ` (${yearMatch[0]})`;
-    title = title.replace(yearMatch[0], "").trim();
-  }
-
-  // kapitalisasi setiap kata
-  title = title.replace(/\b\w/g, c => c.toUpperCase());
-
-  return title + year;
-}
-
 async function getPoster(title) {
-  const cleanTitle = title.replace(/\s\(\d{4}\)$/, ""); // hapus tahun untuk pencarian
+  const cleanTitle = title.replace(/\(.*?\)/, "").trim();
+
   try {
     const omdbRes = await fetch(`https://www.omdbapi.com/?t=${encodeURIComponent(cleanTitle)}&apikey=${OMDB_API_KEY}`);
     const omdbData = await omdbRes.json();
@@ -244,15 +222,29 @@ async function renderMovies(files) {
     count++;
     if (count % 5 === 0) setProgress((count / files.length) * 100);
 
-    const formattedTitle = formatTitle(file.name);
-    const poster = await getPoster(formattedTitle);
+    // === Ambil hanya judul + tahun ===
+    const cleanName = file.name.replace(/\.[^/.]+$/, ""); // hapus ekstensi
+    const parts = cleanName.split(/[.\s_-]+/);
+    const yearIndex = parts.findIndex(p => /^\d{4}$/.test(p));
+    let title = "";
+    let year = "";
 
+    if (yearIndex !== -1) {
+      title = parts.slice(0, yearIndex).join(" ");
+      year = parts[yearIndex];
+    } else {
+      title = cleanName.replace(/\./g, " ");
+    }
+
+    const displayName = year ? `${title} (${year})` : title;
+
+    const poster = await getPoster(displayName);
     const card = document.createElement("div");
     card.className = "card";
     card.innerHTML = `
-      <img src="${poster}" alt="${formattedTitle}">
+      <img src="${poster}" alt="${displayName}">
       <div class="card-content">
-        <h3>${formattedTitle}</h3>
+        <h3>${displayName}</h3>
         <p>${file.size} — ${file.folderName}</p>
         <div class="download">
           <a href="${file.url}" target="_blank">⬇️ Download</a>
