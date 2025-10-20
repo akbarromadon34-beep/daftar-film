@@ -56,94 +56,110 @@ const OMDB_API_KEY = "406b9b64";
 const TMDB_API_KEY = "d15ed461116703666fe13069e7f5341c";
 const posterCache = {};
 
-function setProgress(percent){document.getElementById("progressBar").style.width=percent+"%";}
+function setProgress(percent){
+  document.getElementById("progressBar").style.width = percent + "%";
+}
 
-async function fetchMovies(url=SCRIPT_URL){
-  setProgress(10);
-  const res=await fetch(url);
-  setProgress(40);
-  const files=await res.json();
-  setProgress(70);
-  await renderMovies(files);
-  setProgress(100);
-  setTimeout(()=>setProgress(0),800);
+function detectType(title) {
+  return /S\d{1,2}E\d{1,2}/i.test(title) ? "tv" : "movie";
 }
 
 function cleanTitleForSearch(title){
   return title
     .replace(/\(.*?\)/,"")
-    .replace(/S\d{1,2}E\d{1,2}.*/i,"")
-    .replace(/\b\d{4}\b/,"")
-    .replace(/\b(1080p|720p|WEB[-_. ]?DL|WEBRip|HDRip|BluRay|NF|AMZN|DDP5\.1|H\.264|x264|UCUP|APRT|Atmos|UCU[P]?|NFWEB)\b/gi,"")
+    .replace(/S\d{1,2}E\d{1,2}.*/i,"") // hapus episode dari judul
+    .replace(/\b\d{4}\b/,"") // hapus tahun
+    .replace(/\b(1080p|720p|WEB[-_. ]?DL|WEBRip|HDRip|BluRay|NF|AMZN|DDP5\.1|H\.264|x264|UCUP|APRT|Atmos)\b/gi,"")
     .replace(/\./g," ")
     .replace(/\s{2,}/g," ")
     .trim();
 }
 
 async function getPoster(title, filterType="all"){
-  if(posterCache[title]) return posterCache[title];
-  const cleanTitle=cleanTitleForSearch(title);
+  if (posterCache[title]) return posterCache[title];
+  const cleanTitle = cleanTitleForSearch(title);
 
-  // --- 1️⃣ OMDb dulu ---
-  try{
-    const omdbRes=await fetch(`https://www.omdbapi.com/?t=${encodeURIComponent(cleanTitle)}&apikey=${OMDB_API_KEY}`);
-    const omdbData=await omdbRes.json();
-    if(omdbData.Poster && omdbData.Poster!=="N/A"){
-      posterCache[title]=omdbData.Poster;
+  // 1️⃣ OMDb API
+  try {
+    const omdbRes = await fetch(`https://www.omdbapi.com/?t=${encodeURIComponent(cleanTitle)}&apikey=${OMDB_API_KEY}`);
+    const omdbData = await omdbRes.json();
+    if (omdbData.Poster && omdbData.Poster !== "N/A") {
+      posterCache[title] = omdbData.Poster;
       return omdbData.Poster;
     }
-  }catch(e){}
+  } catch (e) {}
 
-  // --- 2️⃣ TMDb film + tv ---
-  try{
-    let moviePoster=null, tvPoster=null;
-    const movieRes=await fetch(`https://api.themoviedb.org/3/search/movie?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(cleanTitle)}`);
-    const movieData=await movieRes.json();
-    if(movieData.results?.length>0) moviePoster=movieData.results[0].poster_path;
+  // 2️⃣ TMDb API
+  try {
+    let moviePoster = null, tvPoster = null;
 
-    const tvRes=await fetch(`https://api.themoviedb.org/3/search/tv?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(cleanTitle)}`);
-    const tvData=await tvRes.json();
-    if(tvData.results?.length>0) tvPoster=tvData.results[0].poster_path;
+    const movieRes = await fetch(`https://api.themoviedb.org/3/search/movie?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(cleanTitle)}`);
+    const movieData = await movieRes.json();
+    if (movieData.results?.length > 0) moviePoster = movieData.results[0].poster_path;
 
-    let posterPath=null;
-    if(filterType==="movie") posterPath=moviePoster;
-    else if(filterType==="tv") posterPath=tvPoster;
-    else posterPath=moviePoster || tvPoster;
+    const tvRes = await fetch(`https://api.themoviedb.org/3/search/tv?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(cleanTitle)}`);
+    const tvData = await tvRes.json();
+    if (tvData.results?.length > 0) tvPoster = tvData.results[0].poster_path;
 
-    if(posterPath){
-      const url=`https://image.tmdb.org/t/p/w500${posterPath}`;
-      posterCache[title]=url;
+    let posterPath = null;
+    if (filterType === "movie") posterPath = moviePoster;
+    else if (filterType === "tv") posterPath = tvPoster;
+    else posterPath = moviePoster || tvPoster;
+
+    if (posterPath) {
+      const url = `https://image.tmdb.org/t/p/w500${posterPath}`;
+      posterCache[title] = url;
       return url;
     }
-  }catch(e){}
+  } catch (e) {}
 
-  posterCache[title]="https://via.placeholder.com/300x450?text=No+Image";
+  // default placeholder
+  posterCache[title] = "https://via.placeholder.com/300x450?text=No+Image";
   return posterCache[title];
 }
 
+async function fetchMovies(url=SCRIPT_URL){
+  setProgress(10);
+  const res = await fetch(url);
+  setProgress(40);
+  const files = await res.json();
+  setProgress(70);
+  await renderMovies(files);
+  setProgress(100);
+  setTimeout(()=>setProgress(0),800);
+}
+
 async function renderMovies(files){
-  const container=document.getElementById("movies");
-  container.innerHTML="";
-  if(!files||files.length===0){container.innerHTML=`<div class="empty">No movies found</div>`;return;}
+  const container = document.getElementById("movies");
+  container.innerHTML = "";
+  if (!files || files.length === 0) {
+    container.innerHTML = `<div class="empty">No movies found</div>`;
+    return;
+  }
 
-  const filterType=document.getElementById("typeSelect").value;
-  let count=0;
-  for(const file of files){
-    count++;
-    if(count%5===0)setProgress((count/files.length)*100);
+  const filterType = document.getElementById("typeSelect").value;
 
-    const cleanName=file.name.replace(/\.[^/.]+$/,"");
-    const parts=cleanName.split(/[.\s_-]+/);
-    const yearIndex=parts.findIndex(p=>/^\d{4}$/.test(p));
-    let title="",year="";
-    if(yearIndex!==-1){title=parts.slice(0,yearIndex).join(" ");year=parts[yearIndex];}
-    else{title=cleanName.replace(/\./g," ");}
-    const displayName=year?`${title} (${year})`:title;
+  for (const file of files) {
+    const type = detectType(file.name);
+    if (filterType !== "all" && filterType !== type) continue;
 
-    const poster=await getPoster(file.name, filterType);
-    const card=document.createElement("div");
-    card.className="card";
-    card.innerHTML=`
+    const cleanName = file.name.replace(/\.[^/.]+$/, "");
+    const parts = cleanName.split(/[.\s_-]+/);
+    const yearIndex = parts.findIndex(p => /^\d{4}$/.test(p));
+    let title = "", year = "";
+    if (yearIndex !== -1) {
+      title = parts.slice(0, yearIndex).join(" ");
+      year = parts[yearIndex];
+    } else {
+      title = cleanName.replace(/\./g, " ");
+    }
+
+    const displayName = year ? `${title} (${year})` : title;
+
+    const poster = await getPoster(file.name, type);
+    const card = document.createElement("div");
+    card.className = "card";
+    card.innerHTML = `
       <img src="${poster}" alt="${displayName}">
       <div class="card-content">
         <h3>${displayName}</h3>
@@ -157,20 +173,20 @@ async function renderMovies(files){
   }
 }
 
-document.getElementById("search").addEventListener("input",e=>{
-  const val=e.target.value.toLowerCase();
-  document.querySelectorAll(".card").forEach(card=>{
-    card.style.display=card.textContent.toLowerCase().includes(val)?"":"none";
+document.getElementById("search").addEventListener("input", e => {
+  const val = e.target.value.toLowerCase();
+  document.querySelectorAll(".card").forEach(card => {
+    card.style.display = card.textContent.toLowerCase().includes(val) ? "" : "none";
   });
 });
 
-document.getElementById("folderSelect").addEventListener("change",async e=>{
-  const folderId=e.target.value;
-  const url=folderId?`${SCRIPT_URL}?folderId=${folderId}`:SCRIPT_URL;
+document.getElementById("folderSelect").addEventListener("change", async e => {
+  const folderId = e.target.value;
+  const url = folderId ? `${SCRIPT_URL}?folderId=${folderId}` : SCRIPT_URL;
   await fetchMovies(url);
 });
 
-document.getElementById("typeSelect").addEventListener("change",async()=>{
+document.getElementById("typeSelect").addEventListener("change", async () => {
   await fetchMovies();
 });
 
