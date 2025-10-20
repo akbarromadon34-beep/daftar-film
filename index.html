@@ -48,8 +48,9 @@ header h1{margin:0;font-size:1.8em;letter-spacing:0.5px;}
 <div class="container" id="movies"></div>
 
 <script>
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw03Ms12ikF2Ct9llJjgn2KhmXoLcvTYNAbW4F0Oe7W_iqvX-Sib8P6QbBF5mApCc4mFA/exec"; // <= proxy kamu
+const SCRIPT_URL = "https://script.google.com/macros/s/YOUR_SCRIPT_URL_HERE/exec"; // <= Ganti ini
 const OMDB_API_KEY = "10eca265";
+const TMDB_API_KEY = "d15ed461116703666fe13069e7f5341c";
 
 // ==== Sharer.pw Config ====
 const SHARER_EMAIL = "adwik2860@gmail.com";
@@ -59,7 +60,7 @@ const posterCache = {};
 
 function setProgress(percent){document.getElementById("progressBar").style.width=percent+"%";}
 
-// === Mirror ke Sharer.pw via Apps Script Proxy ===
+// === Mirror ke Sharer.pw via Proxy ===
 async function mirrorToSharer(url){
   const cache = JSON.parse(localStorage.getItem("sharer_cache") || "{}");
   if (cache[url]) return cache[url];
