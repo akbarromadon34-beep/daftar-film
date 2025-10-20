@@ -177,6 +177,12 @@ const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwSoVNuzbgC82WJ9UzSU
 const OMDB_API_KEY = "406b9b64";
 const TMDB_API_KEY = "d15ed461116703666fe13069e7f5341c";
 
+// === Progress bar handler ===
+function setProgress(percent) {
+  document.getElementById("progressBar").style.width = percent + "%";
+}
+
+// === Fetch movies from Apps Script ===
 async function fetchMovies(url = SCRIPT_URL) {
   setProgress(10);
   const res = await fetch(url);
@@ -188,46 +194,49 @@ async function fetchMovies(url = SCRIPT_URL) {
   setTimeout(() => setProgress(0), 800);
 }
 
-// 🔹 Fungsi gabungan OMDb + TMDB (film + series)
+// === Poster fetcher with smarter cleaning ===
 async function getPoster(title) {
-  const cleanTitle = title.replace(/\(.*?\)/, "").trim();
+  const cleanTitle = title
+    .replace(/\(.*?\)/, "")            // hapus isi dalam kurung
+    .replace(/S\d{1,2}E\d{1,2}.*/i, "") // hapus kode episode
+    .replace(/\b\d{4}\b/, "")          // hapus tahun
+    .replace(/\b(1080p|720p|WEB[-_. ]?DL|WEBRip|HDRip|BluRay|NF|AMZN|DDP5\.1|H\.264|x264|UCUP|APRT|UCU[P]?|NFWEB|Atmos)\b/gi, "")
+    .replace(/\./g, " ")
+    .replace(/\s{2,}/g, " ")
+    .trim();
 
-  // 🔸 1. Coba TMDB movie + TV
-  try {
-    const tmdbBase = "https://api.themoviedb.org/3";
-    const tmdbImage = "https://image.tmdb.org/t/p/w500";
-
-    // Cari di movie
-    let res = await fetch(`${tmdbBase}/search/movie?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(cleanTitle)}`);
-    let data = await res.json();
-
-    // Kalau kosong → cari di TV
-    if (!data.results || data.results.length === 0) {
-      res = await fetch(`${tmdbBase}/search/tv?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(cleanTitle)}`);
-      data = await res.json();
-    }
-
-    if (data.results && data.results.length > 0) {
-      const posterPath = data.results[0].poster_path;
-      if (posterPath) return `${tmdbImage}${posterPath}`;
-    }
-  } catch (e) {
-    console.warn("TMDB error:", e);
-  }
-
-  // 🔸 2. Jika TMDB gagal → fallback ke OMDb
+  // coba cari di OMDb dulu
   try {
     const omdbRes = await fetch(`https://www.omdbapi.com/?t=${encodeURIComponent(cleanTitle)}&apikey=${OMDB_API_KEY}`);
     const omdbData = await omdbRes.json();
     if (omdbData.Poster && omdbData.Poster !== "N/A") return omdbData.Poster;
-  } catch (e) {
-    console.warn("OMDb error:", e);
-  }
+  } catch (e) {}
 
-  // 🔸 3. Jika semuanya gagal
-  return "https://via.placeholder.com/300x450?text=No+Poster";
+  // lalu coba di TMDb (movie & series)
+  try {
+    const [movieRes, tvRes] = await Promise.all([
+      fetch(`https://api.themoviedb.org/3/search/movie?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(cleanTitle)}`),
+      fetch(`https://api.themoviedb.org/3/search/tv?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(cleanTitle)}`)
+    ]);
+
+    const movieData = await movieRes.json();
+    const tvData = await tvRes.json();
+
+    if (movieData.results?.length > 0) {
+      const posterPath = movieData.results[0].poster_path;
+      if (posterPath) return `https://image.tmdb.org/t/p/w500${posterPath}`;
+    }
+    if (tvData.results?.length > 0) {
+      const posterPath = tvData.results[0].poster_path;
+      if (posterPath) return `https://image.tmdb.org/t/p/w500${posterPath}`;
+    }
+  } catch (e) {}
+
+  // fallback jika tidak ada poster
+  return "https://via.placeholder.com/300x450?text=No+Image";
 }
 
+// === Render movie cards ===
 async function renderMovies(files) {
   const container = document.getElementById("movies");
   container.innerHTML = "";
@@ -241,8 +250,8 @@ async function renderMovies(files) {
     count++;
     if (count % 5 === 0) setProgress((count / files.length) * 100);
 
-    // === Ambil hanya judul + tahun ===
-    const cleanName = file.name.replace(/\.[^/.]+$/, ""); // hapus ekstensi
+    // ambil hanya judul + tahun untuk tampilan, tapi cari poster pakai versi bersih
+    const cleanName = file.name.replace(/\.[^/.]+$/, "");
     const parts = cleanName.split(/[.\s_-]+/);
     const yearIndex = parts.findIndex(p => /^\d{4}$/.test(p));
     let title = "";
@@ -256,8 +265,8 @@ async function renderMovies(files) {
     }
 
     const displayName = year ? `${title} (${year})` : title;
+    const poster = await getPoster(file.name);
 
-    const poster = await getPoster(displayName);
     const card = document.createElement("div");
     card.className = "card";
     card.innerHTML = `
@@ -274,11 +283,7 @@ async function renderMovies(files) {
   }
 }
 
-function setProgress(percent) {
-  document.getElementById("progressBar").style.width = percent + "%";
-}
-
-// Filter pencarian
+// === Filter pencarian ===
 document.getElementById("search").addEventListener("input", e => {
   const val = e.target.value.toLowerCase();
   document.querySelectorAll(".card").forEach(card => {
@@ -286,14 +291,14 @@ document.getElementById("search").addEventListener("input", e => {
   });
 });
 
-// Ganti kategori (folder)
+// === Ganti kategori folder ===
 document.getElementById("folderSelect").addEventListener("change", async e => {
   const folderId = e.target.value;
   const url = folderId ? `${SCRIPT_URL}?folderId=${folderId}` : SCRIPT_URL;
   await fetchMovies(url);
 });
 
-// Load awal
+// === Load awal ===
 fetchMovies();
 </script>
 
