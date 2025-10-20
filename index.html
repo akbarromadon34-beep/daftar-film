@@ -47,7 +47,7 @@
 <div class="container" id="movies"></div>
 
 <script>
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw8BTko418oL8LQQJRb-yz_ybSPjAiisAGaXcU0-qtsi7YhW9jLfleKRJQg62TFyz0VuQ/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwqtf3x1SFYQ_VCj7z3aYDDWD-gmE2mltVORXIv8tIvDJsXyFL0eNQ3_0WGBsWmWlAfAA/exec";
 const OMDB_API_KEY = "10eca265";
 const TMDB_API_KEY = "d15ed461116703666fe13069e7f5341c";
 
@@ -62,7 +62,7 @@ function setProgress(percent){
   document.getElementById("progressBar").style.width = percent + "%";
 }
 
-// === Mirror ke GDToT via Proxy dengan error handling ===
+// === Mirror ke GDToT via Proxy + fallback ke Sharer.pw ===
 async function mirrorToGDTot(url) {
   const cache = JSON.parse(localStorage.getItem("gd_cache") || "{}");
   if (cache[url]) return cache[url];
@@ -79,11 +79,6 @@ async function mirrorToGDTot(url) {
       body
     });
 
-    if (!res.ok) {
-      console.warn(`⚠️ Mirror gagal: HTTP ${res.status} (${res.statusText})`);
-      return url;
-    }
-
     const text = await res.text();
     let data;
     try {
@@ -96,12 +91,19 @@ async function mirrorToGDTot(url) {
     if (data.status === "success" && data.url) {
       cache[url] = data.url;
       localStorage.setItem("gd_cache", JSON.stringify(cache));
-      console.log("✅ Mirror berhasil:", data.url);
+      console.log("✅ Mirror (GDToT) berhasil:", data.url);
       return data.url;
-    } else {
-      console.warn("⚠️ Mirror gagal:", data.message || JSON.stringify(data));
-      return url;
     }
+
+    if (data.fallback === "sharer.pw" && data.url) {
+      console.log("✅ Mirror fallback ke Sharer.pw:", data.url);
+      cache[url] = data.url;
+      localStorage.setItem("gd_cache", JSON.stringify(cache));
+      return data.url;
+    }
+
+    console.warn("⚠️ Mirror gagal:", data.message || JSON.stringify(data));
+    return url;
   } catch (err) {
     console.error("❌ Error koneksi ke GDToT Proxy:", err.message);
     return url;
