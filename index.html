@@ -5,153 +5,28 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>🎬 Movie Index</title>
 <style>
-  body {
-    font-family: 'Segoe UI', Arial, sans-serif;
-    background-color: #16002b;
-    color: #fff;
-    margin: 0;
-    padding: 0;
-  }
-
-  header {
-    background: linear-gradient(90deg, #6a0dad, #9b30ff);
-    padding: 15px 25px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    box-shadow: 0 3px 10px rgba(0,0,0,0.3);
-    flex-wrap: wrap;
-  }
-
-  header h1 {
-    margin: 0;
-    font-size: 1.8em;
-    letter-spacing: 0.5px;
-  }
-
-  .controls {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-  }
-
-  #search, #folderSelect {
-    padding: 8px 12px;
-    border: none;
-    border-radius: 8px;
-    font-size: 1em;
-    outline: none;
-  }
-
-  #folderSelect {
-    background: #fff;
-    color: #333;
-  }
-
-  #progressBarContainer {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 4px;
-    background: rgba(255,255,255,0.1);
-    z-index: 999;
-  }
-
-  #progressBar {
-    height: 4px;
-    width: 0%;
-    background: #ff66ff;
-    transition: width 0.3s;
-  }
-
-  .container {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-    gap: 18px;
-    padding: 25px;
-  }
-
-  .card {
-    background: #250045;
-    border-radius: 12px;
-    box-shadow: 0 5px 10px rgba(0,0,0,0.3);
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    transition: transform 0.2s, box-shadow 0.2s;
-  }
-
-  .card:hover {
-    transform: scale(1.03);
-    box-shadow: 0 8px 18px rgba(0,0,0,0.5);
-  }
-
-  .card img {
-    width: 100%;
-    height: 380px;
-    object-fit: cover;
-    background: #111;
-  }
-
-  .card-content {
-    padding: 12px 15px;
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-  }
-
-  .card h3 {
-    font-size: 1em;
-    margin: 8px 0 5px;
-  }
-
-  .card p {
-    margin: 0;
-    font-size: 0.9em;
-    color: #ccc;
-  }
-
-  .download {
-    margin-top: auto;
-    text-align: center;
-  }
-
-  .download a {
-    display: inline-block;
-    margin-top: 10px;
-    padding: 8px 15px;
-    background: #9b30ff;
-    border-radius: 6px;
-    color: #fff;
-    text-decoration: none;
-    transition: background 0.2s;
-  }
-
-  .download a:hover {
-    background: #b84fff;
-  }
-
-  .empty {
-    text-align: center;
-    padding: 50px;
-    color: #aaa;
-  }
-
-  @media (max-width: 600px) {
-    header {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 10px;
-    }
-    .controls {
-      flex-direction: column;
-      width: 100%;
-    }
-    #search, #folderSelect {
-      width: 100%;
-    }
-  }
+  body {font-family:'Segoe UI',Arial,sans-serif;background-color:#16002b;color:#fff;margin:0;padding:0;}
+  header{background:linear-gradient(90deg,#6a0dad,#9b30ff);padding:15px 25px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 3px 10px rgba(0,0,0,0.3);flex-wrap:wrap;}
+  header h1{margin:0;font-size:1.8em;letter-spacing:0.5px;}
+  .controls{display:flex;gap:10px;align-items:center;}
+  #search,#folderSelect{padding:8px 12px;border:none;border-radius:8px;font-size:1em;outline:none;}
+  #folderSelect{background:#fff;color:#333;}
+  #progressBarContainer{position:fixed;top:0;left:0;width:100%;height:4px;background:rgba(255,255,255,0.1);z-index:999;}
+  #progressBar{height:4px;width:0%;background:#ff66ff;transition:width 0.3s;}
+  .container{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:18px;padding:25px;}
+  .card{background:#250045;border-radius:12px;box-shadow:0 5px 10px rgba(0,0,0,0.3);overflow:hidden;display:flex;flex-direction:column;transition:transform 0.2s,box-shadow 0.2s;}
+  .card:hover{transform:scale(1.03);box-shadow:0 8px 18px rgba(0,0,0,0.5);}
+  .card img{width:100%;height:380px;object-fit:cover;background:#111;}
+  .card-content{padding:12px 15px;flex:1;display:flex;flex-direction:column;}
+  .card h3{font-size:1em;margin:8px 0 5px;}
+  .card p{margin:0;font-size:0.9em;color:#ccc;}
+  .download{margin-top:auto;text-align:center;}
+  .download a{display:inline-block;margin-top:10px;padding:8px 15px;background:#9b30ff;border-radius:6px;color:#fff;text-decoration:none;transition:background 0.2s;}
+  .download a:hover{background:#b84fff;}
+  .empty{text-align:center;padding:50px;color:#aaa;}
+  .label{position:absolute;top:8px;left:8px;background:rgba(0,0,0,0.7);padding:3px 8px;border-radius:6px;font-size:0.8em;}
+  .card-wrapper{position:relative;}
+  @media(max-width:600px){header{flex-direction:column;align-items:flex-start;gap:10px;}.controls{flex-direction:column;width:100%;}#search,#folderSelect{width:100%;}}
 </style>
 </head>
 <body>
@@ -176,100 +51,104 @@
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwSoVNuzbgC82WJ9UzSU-nCIo4JIiP1Av-qPdpjWzbcC4LJPrMwooQVfCFkotbL2voVfA/exec";
 const OMDB_API_KEY = "406b9b64";
 const TMDB_API_KEY = "d15ed461116703666fe13069e7f5341c";
+const posterCache = {};
 
-// === Progress bar handler ===
-function setProgress(percent) {
-  document.getElementById("progressBar").style.width = percent + "%";
-}
+function setProgress(percent){document.getElementById("progressBar").style.width=percent+"%";}
 
-// === Fetch movies from Apps Script ===
-async function fetchMovies(url = SCRIPT_URL) {
+async function fetchMovies(url=SCRIPT_URL){
   setProgress(10);
-  const res = await fetch(url);
+  const res=await fetch(url);
   setProgress(40);
-  const files = await res.json();
+  const files=await res.json();
   setProgress(70);
   await renderMovies(files);
   setProgress(100);
-  setTimeout(() => setProgress(0), 800);
+  setTimeout(()=>setProgress(0),800);
 }
 
-// === Poster fetcher with smarter cleaning ===
-async function getPoster(title) {
-  const cleanTitle = title
-    .replace(/\(.*?\)/, "")            // hapus isi dalam kurung
-    .replace(/S\d{1,2}E\d{1,2}.*/i, "") // hapus kode episode
-    .replace(/\b\d{4}\b/, "")          // hapus tahun
-    .replace(/\b(1080p|720p|WEB[-_. ]?DL|WEBRip|HDRip|BluRay|NF|AMZN|DDP5\.1|H\.264|x264|UCUP|APRT|UCU[P]?|NFWEB|Atmos)\b/gi, "")
-    .replace(/\./g, " ")
-    .replace(/\s{2,}/g, " ")
+function cleanTitleForSearch(title){
+  return title
+    .replace(/\(.*?\)/,"")
+    .replace(/S\d{1,2}E\d{1,2}.*/i,"")
+    .replace(/\b\d{4}\b/,"")
+    .replace(/\b(1080p|720p|WEB[-_. ]?DL|WEBRip|HDRip|BluRay|NF|AMZN|DDP5\.1|H\.264|x264|UCUP|APRT|Atmos|UCU[P]?|NFWEB)\b/gi,"")
+    .replace(/\./g," ")
+    .replace(/\s{2,}/g," ")
     .trim();
-
-  // coba cari di OMDb dulu
-  try {
-    const omdbRes = await fetch(`https://www.omdbapi.com/?t=${encodeURIComponent(cleanTitle)}&apikey=${OMDB_API_KEY}`);
-    const omdbData = await omdbRes.json();
-    if (omdbData.Poster && omdbData.Poster !== "N/A") return omdbData.Poster;
-  } catch (e) {}
-
-  // lalu coba di TMDb (movie & series)
-  try {
-    const [movieRes, tvRes] = await Promise.all([
-      fetch(`https://api.themoviedb.org/3/search/movie?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(cleanTitle)}`),
-      fetch(`https://api.themoviedb.org/3/search/tv?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(cleanTitle)}`)
-    ]);
-
-    const movieData = await movieRes.json();
-    const tvData = await tvRes.json();
-
-    if (movieData.results?.length > 0) {
-      const posterPath = movieData.results[0].poster_path;
-      if (posterPath) return `https://image.tmdb.org/t/p/w500${posterPath}`;
-    }
-    if (tvData.results?.length > 0) {
-      const posterPath = tvData.results[0].poster_path;
-      if (posterPath) return `https://image.tmdb.org/t/p/w500${posterPath}`;
-    }
-  } catch (e) {}
-
-  // fallback jika tidak ada poster
-  return "https://via.placeholder.com/300x450?text=No+Image";
 }
 
-// === Render movie cards ===
-async function renderMovies(files) {
-  const container = document.getElementById("movies");
-  container.innerHTML = "";
-  if (!files || files.length === 0) {
-    container.innerHTML = `<div class="empty">No movies found</div>`;
+async function getPoster(title){
+  if(posterCache[title]) return posterCache[title];
+  const cleanTitle=cleanTitleForSearch(title);
+
+  // --- 1️⃣ Coba OMDb dulu ---
+  try{
+    const omdbRes=await fetch(`https://www.omdbapi.com/?t=${encodeURIComponent(cleanTitle)}&apikey=${OMDB_API_KEY}`);
+    const omdbData=await omdbRes.json();
+    if(omdbData.Poster && omdbData.Poster!=="N/A"){
+      posterCache[title]=omdbData.Poster;
+      return omdbData.Poster;
+    }
+  }catch(e){}
+
+  // --- 2️⃣ Coba TMDb (film dulu, lalu TV) ---
+  try{
+    const movieRes=await fetch(`https://api.themoviedb.org/3/search/movie?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(cleanTitle)}`);
+    const movieData=await movieRes.json();
+    if(movieData.results?.length>0){
+      const posterPath=movieData.results[0].poster_path;
+      if(posterPath){
+        const url=`https://image.tmdb.org/t/p/w500${posterPath}`;
+        posterCache[title]=url;
+        return url;
+      }
+    }
+
+    const tvRes=await fetch(`https://api.themoviedb.org/3/search/tv?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(cleanTitle)}`);
+    const tvData=await tvRes.json();
+    if(tvData.results?.length>0){
+      const posterPath=tvData.results[0].poster_path;
+      if(posterPath){
+        const url=`https://image.tmdb.org/t/p/w500${posterPath}`;
+        posterCache[title]=url;
+        return url;
+      }
+    }
+  }catch(e){}
+
+  // --- 3️⃣ Fallback placeholder ---
+  posterCache[title]="https://via.placeholder.com/300x450?text=No+Image";
+  return posterCache[title];
+}
+
+async function renderMovies(files){
+  const container=document.getElementById("movies");
+  container.innerHTML="";
+  if(!files||files.length===0){
+    container.innerHTML=`<div class="empty">No movies found</div>`;
     return;
   }
 
-  let count = 0;
-  for (const file of files) {
+  let count=0;
+  for(const file of files){
     count++;
-    if (count % 5 === 0) setProgress((count / files.length) * 100);
+    if(count%5===0)setProgress((count/files.length)*100);
 
-    // ambil hanya judul + tahun untuk tampilan, tapi cari poster pakai versi bersih
-    const cleanName = file.name.replace(/\.[^/.]+$/, "");
-    const parts = cleanName.split(/[.\s_-]+/);
-    const yearIndex = parts.findIndex(p => /^\d{4}$/.test(p));
-    let title = "";
-    let year = "";
+    const cleanName=file.name.replace(/\.[^/.]+$/,"");
+    const parts=cleanName.split(/[.\s_-]+/);
+    const yearIndex=parts.findIndex(p=>/^\d{4}$/.test(p));
+    let title="",year="";
+    if(yearIndex!==-1){title=parts.slice(0,yearIndex).join(" ");year=parts[yearIndex];}
+    else{title=cleanName.replace(/\./g," ");}
+    const displayName=year?`${title} (${year})`:title;
 
-    if (yearIndex !== -1) {
-      title = parts.slice(0, yearIndex).join(" ");
-      year = parts[yearIndex];
-    } else {
-      title = cleanName.replace(/\./g, " ");
-    }
+    const poster=await getPoster(file.name);
 
-    const displayName = year ? `${title} (${year})` : title;
-    const poster = await getPoster(file.name);
-
-    const card = document.createElement("div");
-    card.className = "card";
-    card.innerHTML = `
+    const card=document.createElement("div");
+    card.className="card-wrapper";
+    const cardInner=document.createElement("div");
+    cardInner.className="card";
+    cardInner.innerHTML=`
       <img src="${poster}" alt="${displayName}">
       <div class="card-content">
         <h3>${displayName}</h3>
@@ -279,28 +158,25 @@ async function renderMovies(files) {
         </div>
       </div>
     `;
+    card.appendChild(cardInner);
     container.appendChild(card);
   }
 }
 
-// === Filter pencarian ===
-document.getElementById("search").addEventListener("input", e => {
-  const val = e.target.value.toLowerCase();
-  document.querySelectorAll(".card").forEach(card => {
-    card.style.display = card.textContent.toLowerCase().includes(val) ? "" : "none";
+document.getElementById("search").addEventListener("input",e=>{
+  const val=e.target.value.toLowerCase();
+  document.querySelectorAll(".card").forEach(card=>{
+    card.style.display=card.textContent.toLowerCase().includes(val)?"":"none";
   });
 });
 
-// === Ganti kategori folder ===
-document.getElementById("folderSelect").addEventListener("change", async e => {
-  const folderId = e.target.value;
-  const url = folderId ? `${SCRIPT_URL}?folderId=${folderId}` : SCRIPT_URL;
+document.getElementById("folderSelect").addEventListener("change",async e=>{
+  const folderId=e.target.value;
+  const url=folderId?`${SCRIPT_URL}?folderId=${folderId}`:SCRIPT_URL;
   await fetchMovies(url);
 });
 
-// === Load awal ===
 fetchMovies();
 </script>
-
 </body>
 </html>
