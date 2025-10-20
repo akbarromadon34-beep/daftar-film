@@ -59,10 +59,10 @@ const posterCache = {};
 
 function setProgress(percent){document.getElementById("progressBar").style.width=percent+"%";}
 
-// === Fungsi untuk otomatis mirror ke GDToT ===
+// === GDToT Mirror (dengan pengecekan error) ===
 async function mirrorToGDTot(url) {
   const cache = JSON.parse(localStorage.getItem("gd_cache") || "{}");
-  if (cache[url]) return cache[url]; // pakai hasil mirror sebelumnya
+  if (cache[url]) return cache[url];
 
   try {
     const body = new URLSearchParams();
@@ -76,19 +76,30 @@ async function mirrorToGDTot(url) {
       body
     });
 
-    const data = await res.json();
+    const text = await res.text();
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch {
+      console.warn("⚠️ GDToT respon bukan JSON:", text);
+      return url;
+    }
 
+    // Validasi respon
     if (data.status === "success" && data.url) {
       cache[url] = data.url;
       localStorage.setItem("gd_cache", JSON.stringify(cache));
       console.log("✅ Mirror berhasil:", data.url);
       return data.url;
+    } else if (data.status === "error") {
+      console.warn(`⚠️ GDToT error: ${data.message || 'unknown error'}`);
+      return url;
     } else {
       console.warn("⚠️ Mirror gagal:", data);
-      return url; // fallback ke link asli
+      return url;
     }
   } catch (err) {
-    console.error("❌ Error mirroring:", err);
+    console.error("❌ Error koneksi ke GDToT:", err);
     return url;
   }
 }
