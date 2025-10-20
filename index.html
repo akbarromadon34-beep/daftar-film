@@ -7,10 +7,11 @@
 <style>
   body {font-family:'Segoe UI',Arial,sans-serif;background-color:#16002b;color:#fff;margin:0;padding:0;}
   header{background:linear-gradient(90deg,#6a0dad,#9b30ff);padding:15px 25px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 3px 10px rgba(0,0,0,0.3);flex-wrap:wrap;}
-  header h1{margin:0;font-size:1.8em;letter-spacing:0.5px;}
+  header h1{margin:0;font-size:1.8em;letter-spacing:0.5px;display:flex;align-items:center;gap:8px;}
+  header h1::before{content:"🎬";}
   .controls{display:flex;gap:10px;align-items:center;}
-  #search,#folderSelect{padding:8px 12px;border:none;border-radius:8px;font-size:1em;outline:none;}
-  #folderSelect{background:#fff;color:#333;}
+  select,#search{padding:8px 12px;border:none;border-radius:8px;font-size:1em;outline:none;}
+  select{background:#fff;color:#333;}
   #progressBarContainer{position:fixed;top:0;left:0;width:100%;height:4px;background:rgba(255,255,255,0.1);z-index:999;}
   #progressBar{height:4px;width:0%;background:#ff66ff;transition:width 0.3s;}
   .container{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:18px;padding:25px;}
@@ -24,8 +25,9 @@
   .download a{display:inline-block;margin-top:10px;padding:8px 15px;background:#9b30ff;border-radius:6px;color:#fff;text-decoration:none;transition:background 0.2s;}
   .download a:hover{background:#b84fff;}
   .empty{text-align:center;padding:50px;color:#aaa;}
+  .label{position:absolute;top:8px;left:8px;background:rgba(0,0,0,0.7);padding:3px 8px;border-radius:6px;font-size:0.8em;}
   .card-wrapper{position:relative;}
-  @media(max-width:600px){header{flex-direction:column;align-items:flex-start;gap:10px;}.controls{flex-direction:column;width:100%;}#search,#folderSelect{width:100%;}}
+  @media(max-width:600px){header{flex-direction:column;align-items:flex-start;gap:10px;}.controls{flex-direction:column;width:100%;}select,#search{width:100%;}}
 </style>
 </head>
 <body>
@@ -33,12 +35,17 @@
 <div id="progressBarContainer"><div id="progressBar"></div></div>
 
 <header>
-  <h1>🎬 Movie Index</h1>
+  <h1>Movie Index</h1>
   <div class="controls">
     <select id="folderSelect">
       <option value="">All Categories</option>
       <option value="1FOLDER_ID_AMZN">Amazon</option>
       <option value="1FOLDER_ID_NF">Netflix</option>
+    </select>
+    <select id="typeSelect">
+      <option value="">All Types</option>
+      <option value="movie">Movie</option>
+      <option value="tv">Series</option>
     </select>
     <input type="text" id="search" placeholder="Search movies...">
   </div>
@@ -50,7 +57,11 @@
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwSoVNuzbgC82WJ9UzSU-nCIo4JIiP1Av-qPdpjWzbcC4LJPrMwooQVfCFkotbL2voVfA/exec";
 const OMDB_API_KEY = "406b9b64";
 const TMDB_API_KEY = "d15ed461116703666fe13069e7f5341c";
-const posterCache = {};
+const posterCache = JSON.parse(localStorage.getItem("posterCache") || "{}");
+
+function saveCache() {
+  localStorage.setItem("posterCache", JSON.stringify(posterCache));
+}
 
 function setProgress(percent){document.getElementById("progressBar").style.width=percent+"%";}
 
@@ -66,65 +77,59 @@ async function fetchMovies(url=SCRIPT_URL){
 }
 
 function cleanTitleForSearch(title){
-  // Hilangkan info resolusi, codec, provider, dan ekstensi
-  let clean = title
-    .replace(/\.[^/.]+$/, "")
-    .replace(/\(.*?\)/, "")
-    .replace(/\b(1080p|720p|2160p|4K|WEB[-_. ]?DL|WEBRip|HDRip|BluRay|NF|AMZN|DDP5\.1|H\.264|x264|UCUP|APRT|Atmos|UCU[P]?|NFWEB)\b/gi, "")
-    .replace(/\s+/g, " ")
+  return title
+    .replace(/\(.*?\)/,"")
+    .replace(/S\d{1,2}E\d{1,2}.*/i,"")
+    .replace(/\b\d{4}\b/,"")
+    .replace(/\b(1080p|720p|WEB[-_. ]?DL|WEBRip|HDRip|BluRay|NF|AMZN|DDP5\.1|H\.264|x264|UCUP|APRT|Atmos|UCU[P]?|NFWEB)\b/gi,"")
+    .replace(/\./g," ")
+    .replace(/\s{2,}/g," ")
     .trim();
-
-  // Jika ada episode (SxxExx), hapus bagian episode
-  if (/\bS\d{1,2}E\d{1,2}\b/i.test(clean)) {
-    clean = clean.replace(/\bS\d{1,2}E\d{1,2}.*/i, "").trim();
-  }
-  return clean;
 }
 
-async function getPoster(title){
+async function getPoster(title, typeFilter=""){
   if(posterCache[title]) return posterCache[title];
-  const cleanTitle = cleanTitleForSearch(title);
+  const cleanTitle=cleanTitleForSearch(title);
 
-  // 1️⃣ Coba OMDb — cocok untuk film (gunakan judul & tahun jika ada)
-  try {
-    const omdbRes = await fetch(`https://www.omdbapi.com/?t=${encodeURIComponent(cleanTitle)}&apikey=${OMDB_API_KEY}`);
-    const omdbData = await omdbRes.json();
-    if(omdbData.Poster && omdbData.Poster !== "N/A") {
-      posterCache[title] = omdbData.Poster;
+  // --- 1️⃣ Coba OMDb dulu ---
+  try{
+    const omdbRes=await fetch(`https://www.omdbapi.com/?t=${encodeURIComponent(cleanTitle)}&apikey=${OMDB_API_KEY}`);
+    const omdbData=await omdbRes.json();
+    if(omdbData.Poster && omdbData.Poster!=="N/A"){
+      posterCache[title]=omdbData.Poster;
+      saveCache();
       return omdbData.Poster;
     }
-  } catch(e) {}
+  }catch(e){}
 
-  // 2️⃣ Coba TMDb Movie
-  try {
-    const movieRes = await fetch(`https://api.themoviedb.org/3/search/movie?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(cleanTitle)}`);
-    const movieData = await movieRes.json();
-    if(movieData.results?.length > 0){
-      const posterPath = movieData.results[0].poster_path;
-      if(posterPath){
-        const url = `https://image.tmdb.org/t/p/w500${posterPath}`;
-        posterCache[title] = url;
-        return url;
+  // --- 2️⃣ Coba TMDb sesuai filter ---
+  try{
+    let urls=[];
+    if(typeFilter==="movie" || typeFilter===""){
+      urls.push(`https://api.themoviedb.org/3/search/movie?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(cleanTitle)}`);
+    }
+    if(typeFilter==="tv" || typeFilter===""){
+      urls.push(`https://api.themoviedb.org/3/search/tv?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(cleanTitle)}`);
+    }
+
+    for(const apiUrl of urls){
+      const res=await fetch(apiUrl);
+      const data=await res.json();
+      if(data.results?.length>0){
+        const posterPath=data.results[0].poster_path;
+        if(posterPath){
+          const url=`https://image.tmdb.org/t/p/w500${posterPath}`;
+          posterCache[title]=url;
+          saveCache();
+          return url;
+        }
       }
     }
-  } catch(e) {}
+  }catch(e){}
 
-  // 3️⃣ Jika gagal, coba TMDb TV (series)
-  try {
-    const tvRes = await fetch(`https://api.themoviedb.org/3/search/tv?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(cleanTitle)}`);
-    const tvData = await tvRes.json();
-    if(tvData.results?.length > 0){
-      const posterPath = tvData.results[0].poster_path;
-      if(posterPath){
-        const url = `https://image.tmdb.org/t/p/w500${posterPath}`;
-        posterCache[title] = url;
-        return url;
-      }
-    }
-  } catch(e) {}
-
-  // 4️⃣ Fallback placeholder
-  posterCache[title] = "https://via.placeholder.com/300x450?text=No+Image";
+  // --- 3️⃣ Fallback ---
+  posterCache[title]="https://via.placeholder.com/300x450?text=No+Image";
+  saveCache();
   return posterCache[title];
 }
 
@@ -136,6 +141,7 @@ async function renderMovies(files){
     return;
   }
 
+  const typeFilter=document.getElementById("typeSelect").value;
   let count=0;
   for(const file of files){
     count++;
@@ -149,7 +155,7 @@ async function renderMovies(files){
     else{title=cleanName.replace(/\./g," ");}
     const displayName=year?`${title} (${year})`:title;
 
-    const poster = await getPoster(displayName);
+    const poster=await getPoster(file.name,typeFilter);
 
     const card=document.createElement("div");
     card.className="card-wrapper";
@@ -181,6 +187,10 @@ document.getElementById("folderSelect").addEventListener("change",async e=>{
   const folderId=e.target.value;
   const url=folderId?`${SCRIPT_URL}?folderId=${folderId}`:SCRIPT_URL;
   await fetchMovies(url);
+});
+
+document.getElementById("typeSelect").addEventListener("change",()=>{
+  fetchMovies();
 });
 
 fetchMovies();
