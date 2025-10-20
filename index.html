@@ -47,22 +47,19 @@
 <div class="container" id="movies"></div>
 
 <script>
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzm5CK-370onMyIT2cL6wpbACN8o5IkZAqYh7Sd5E4YOJlduo9ioxOQPLtivDc46FCJgQ/exec";
-const OMDB_API_KEY = "10eca265";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwSoVNuzbgC82WJ9UzSU-nCIo4JIiP1Av-qPdpjWzbcC4LJPrMwooQVfCFkotbL2voVfA/exec";
+const OMDB_API_KEY = "406b9b64";
 const TMDB_API_KEY = "d15ed461116703666fe13069e7f5341c";
 
-// ==== GDToT Config (via Proxy) ====
-const GDTOT_EMAIL = "adwik2860@gmail.com";
-const GDTOT_API_KEY = "kVTKqsfQlU39uQnqh2Zb4LQwneUNU";
-const GDTOT_PROXY = "https://script.google.com/macros/s/AKfycbwejRqEi3AlKXtIDNRGZ6llLuDU6EhixEsG2z6-44JvoD4yJu8t36h-MpkiA1lc7PqzvA/exec";
+// ==== GDToT Config ====
+const GDTOT_EMAIL = "adwik2860@gmail.com"; // Ganti dgn email GDToT kamu
+const GDTOT_API_KEY = "kVTKqsfQlU39uQnqh2Zb4LQwneUNU"; // Ganti dgn API key kamu
 
 const posterCache = {};
 
-function setProgress(percent){
-  document.getElementById("progressBar").style.width = percent + "%";
-}
+function setProgress(percent){document.getElementById("progressBar").style.width=percent+"%";}
 
-// === Mirror ke GDToT via Proxy + fallback ke Sharer.pw ===
+// === GDToT Mirror (dengan pengecekan error) ===
 async function mirrorToGDTot(url) {
   const cache = JSON.parse(localStorage.getItem("gd_cache") || "{}");
   if (cache[url]) return cache[url];
@@ -73,7 +70,7 @@ async function mirrorToGDTot(url) {
     body.append("api_token", GDTOT_API_KEY);
     body.append("url", url);
 
-    const res = await fetch(GDTOT_PROXY, {
+    const res = await fetch("https://new.gdtot.com/api/upload/link", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body
@@ -84,48 +81,45 @@ async function mirrorToGDTot(url) {
     try {
       data = JSON.parse(text);
     } catch {
-      console.warn("⚠️ Mirror gagal: Respon bukan JSON:", text);
+      console.warn("⚠️ GDToT respon bukan JSON:", text);
       return url;
     }
 
+    // Validasi respon
     if (data.status === "success" && data.url) {
       cache[url] = data.url;
       localStorage.setItem("gd_cache", JSON.stringify(cache));
-      console.log("✅ Mirror (GDToT) berhasil:", data.url);
+      console.log("✅ Mirror berhasil:", data.url);
       return data.url;
+    } else if (data.status === "error") {
+      console.warn(`⚠️ GDToT error: ${data.message || 'unknown error'}`);
+      return url;
+    } else {
+      console.warn("⚠️ Mirror gagal:", data);
+      return url;
     }
-
-    if (data.fallback === "sharer.pw" && data.url) {
-      console.log("✅ Mirror fallback ke Sharer.pw:", data.url);
-      cache[url] = data.url;
-      localStorage.setItem("gd_cache", JSON.stringify(cache));
-      return data.url;
-    }
-
-    console.warn("⚠️ Mirror gagal:", data.message || JSON.stringify(data));
-    return url;
   } catch (err) {
-    console.error("❌ Error koneksi ke GDToT Proxy:", err.message);
+    console.error("❌ Error koneksi ke GDToT:", err);
     return url;
   }
 }
 
-async function fetchMovies(url = SCRIPT_URL) {
+async function fetchMovies(url=SCRIPT_URL){
   setProgress(10);
-  const res = await fetch(url);
+  const res=await fetch(url);
   setProgress(40);
-  const files = await res.json();
+  const files=await res.json();
   setProgress(70);
   await renderMovies(files);
   setProgress(100);
-  setTimeout(() => setProgress(0), 800);
+  setTimeout(()=>setProgress(0),800);
 }
 
-function cleanTitleForSearch(title) {
+function cleanTitleForSearch(title){
   let clean = title
     .replace(/\.[^/.]+$/, "")
     .replace(/\(.*?\)/, "")
-    .replace(/\b(1080p|720p|2160p|4K|WEB[-_. ]?DL|WEBRip|HDRip|BluRay|NF|AMZN|DDP5\.1|H\.264|x264|UCUP|APRT|Atmos|NFWEB)\b/gi, "")
+    .replace(/\b(1080p|720p|2160p|4K|WEB[-_. ]?DL|WEBRip|HDRip|BluRay|NF|AMZN|DDP5\.1|H\.264|x264|UCUP|APRT|Atmos|UCU[P]?|NFWEB)\b/gi, "")
     .replace(/\s+/g, " ")
     .trim();
   if (/\bS\d{1,2}E\d{1,2}\b/i.test(clean)) {
@@ -134,82 +128,80 @@ function cleanTitleForSearch(title) {
   return clean;
 }
 
-async function getPoster(title) {
-  if (posterCache[title]) return posterCache[title];
+async function getPoster(title){
+  if(posterCache[title]) return posterCache[title];
   const cleanTitle = cleanTitleForSearch(title);
 
   try {
     const omdbRes = await fetch(`https://www.omdbapi.com/?t=${encodeURIComponent(cleanTitle)}&apikey=${OMDB_API_KEY}`);
     const omdbData = await omdbRes.json();
-    if (omdbData.Poster && omdbData.Poster !== "N/A") {
+    if(omdbData.Poster && omdbData.Poster !== "N/A") {
       posterCache[title] = omdbData.Poster;
       return omdbData.Poster;
     }
-  } catch {}
+  } catch(e) {}
 
   try {
     const movieRes = await fetch(`https://api.themoviedb.org/3/search/movie?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(cleanTitle)}`);
     const movieData = await movieRes.json();
-    if (movieData.results?.length > 0) {
+    if(movieData.results?.length > 0){
       const posterPath = movieData.results[0].poster_path;
-      if (posterPath) {
+      if(posterPath){
         const url = `https://image.tmdb.org/t/p/w500${posterPath}`;
         posterCache[title] = url;
         return url;
       }
     }
-  } catch {}
+  } catch(e) {}
 
   try {
     const tvRes = await fetch(`https://api.themoviedb.org/3/search/tv?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(cleanTitle)}`);
     const tvData = await tvRes.json();
-    if (tvData.results?.length > 0) {
+    if(tvData.results?.length > 0){
       const posterPath = tvData.results[0].poster_path;
-      if (posterPath) {
+      if(posterPath){
         const url = `https://image.tmdb.org/t/p/w500${posterPath}`;
         posterCache[title] = url;
         return url;
       }
     }
-  } catch {}
+  } catch(e) {}
 
   posterCache[title] = "https://via.placeholder.com/300x450?text=No+Image";
   return posterCache[title];
 }
 
-async function renderMovies(files) {
-  const container = document.getElementById("movies");
-  container.innerHTML = "";
-  if (!files || files.length === 0) {
-    container.innerHTML = `<div class="empty">No movies found</div>`;
+async function renderMovies(files){
+  const container=document.getElementById("movies");
+  container.innerHTML="";
+  if(!files||files.length===0){
+    container.innerHTML=`<div class="empty">No movies found</div>`;
     return;
   }
 
-  let count = 0;
-  for (const file of files) {
+  let count=0;
+  for(const file of files){
     count++;
-    if (count % 5 === 0) setProgress((count / files.length) * 100);
+    if(count%5===0)setProgress((count/files.length)*100);
 
-    const cleanName = file.name.replace(/\.[^/.]+$/, "");
-    const parts = cleanName.split(/[.\s_-]+/);
-    const yearIndex = parts.findIndex(p => /^\d{4}$/.test(p));
-    let title = "", year = "";
-    if (yearIndex !== -1) {
-      title = parts.slice(0, yearIndex).join(" ");
-      year = parts[yearIndex];
-    } else {
-      title = cleanName.replace(/\./g, " ");
-    }
+    const cleanName=file.name.replace(/\.[^/.]+$/,"");
+    const parts=cleanName.split(/[.\s_-]+/);
+    const yearIndex=parts.findIndex(p=>/^\d{4}$/.test(p));
+    let title="",year="";
+    if(yearIndex!==-1){title=parts.slice(0,yearIndex).join(" ");year=parts[yearIndex];}
+    else{title=cleanName.replace(/\./g," ");}
 
-    const displayName = year ? `${title} (${year})` : title;
+    const displayName=year?`${title} (${year})`:title;
     const poster = await getPoster(displayName);
+
+    // === Mirror otomatis ke GDToT ===
     const gdLink = await mirrorToGDTot(file.url);
 
-    const card = document.createElement("div");
-    card.className = "card-wrapper";
-    const cardInner = document.createElement("div");
-    cardInner.className = "card";
-    cardInner.innerHTML = `
+    const card=document.createElement("div");
+    card.className="card-wrapper";
+    const cardInner=document.createElement("div");
+    cardInner.className="card";
+    cardInner.innerHTML=`
       <img src="${poster}" alt="${displayName}">
       <div class="card-content">
         <h3>${displayName}</h3>
@@ -224,16 +216,16 @@ async function renderMovies(files) {
   }
 }
 
-document.getElementById("search").addEventListener("input", e => {
-  const val = e.target.value.toLowerCase();
-  document.querySelectorAll(".card").forEach(card => {
-    card.style.display = card.textContent.toLowerCase().includes(val) ? "" : "none";
+document.getElementById("search").addEventListener("input",e=>{
+  const val=e.target.value.toLowerCase();
+  document.querySelectorAll(".card").forEach(card=>{
+    card.style.display=card.textContent.toLowerCase().includes(val)?"":"none";
   });
 });
 
-document.getElementById("folderSelect").addEventListener("change", async e => {
-  const folderId = e.target.value;
-  const url = folderId ? `${SCRIPT_URL}?folderId=${folderId}` : SCRIPT_URL;
+document.getElementById("folderSelect").addEventListener("change",async e=>{
+  const folderId=e.target.value;
+  const url=folderId?`${SCRIPT_URL}?folderId=${folderId}`:SCRIPT_URL;
   await fetchMovies(url);
 });
 
