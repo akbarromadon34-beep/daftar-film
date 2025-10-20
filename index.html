@@ -5,26 +5,128 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>🎬 Movie Index</title>
 <style>
-  body {font-family:'Segoe UI',Arial,sans-serif;background-color:#16002b;color:#fff;margin:0;padding:0;}
-  header{background:linear-gradient(90deg,#6a0dad,#9b30ff);padding:15px 25px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 3px 10px rgba(0,0,0,0.3);flex-wrap:wrap;}
-  header h1{margin:0;font-size:1.8em;letter-spacing:0.5px;display:flex;align-items:center;gap:8px;}
-  .controls{display:flex;gap:10px;align-items:center;}
-  #search,#folderSelect,#typeSelect{padding:8px 12px;border:none;border-radius:8px;font-size:1em;outline:none;}
-  #folderSelect,#typeSelect{background:#fff;color:#333;}
-  #progressBarContainer{position:fixed;top:0;left:0;width:100%;height:4px;background:rgba(255,255,255,0.1);z-index:999;}
-  #progressBar{height:4px;width:0%;background:#ff66ff;transition:width 0.3s;}
-  .container{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:18px;padding:25px;}
-  .card{background:#250045;border-radius:12px;box-shadow:0 5px 10px rgba(0,0,0,0.3);overflow:hidden;display:flex;flex-direction:column;transition:transform 0.2s,box-shadow 0.2s;}
-  .card:hover{transform:scale(1.03);box-shadow:0 8px 18px rgba(0,0,0,0.5);}
-  .card img{width:100%;height:380px;object-fit:cover;background:#111;}
-  .card-content{padding:12px 15px;flex:1;display:flex;flex-direction:column;}
-  .card h3{font-size:1em;margin:8px 0 5px;}
-  .card p{margin:0;font-size:0.9em;color:#ccc;}
-  .download{margin-top:auto;text-align:center;}
-  .download a{display:inline-block;margin-top:10px;padding:8px 15px;background:#9b30ff;border-radius:6px;color:#fff;text-decoration:none;transition:background 0.2s;}
-  .download a:hover{background:#b84fff;}
-  .empty{text-align:center;padding:50px;color:#aaa;}
-  @media(max-width:600px){header{flex-direction:column;align-items:flex-start;gap:10px;}.controls{flex-direction:column;width:100%;}#search,#folderSelect,#typeSelect{width:100%;}}
+  body {
+    font-family:'Segoe UI',Arial,sans-serif;
+    background-color:#16002b;
+    color:#fff;
+    margin:0;
+    padding:0;
+  }
+  header {
+    background:linear-gradient(90deg,#6a0dad,#9b30ff);
+    padding:15px 25px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    box-shadow:0 3px 10px rgba(0,0,0,0.3);
+    flex-wrap:wrap;
+  }
+  header h1 {
+    margin:0;
+    font-size:1.8em;
+    letter-spacing:0.5px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .controls {
+    display:flex;
+    gap:10px;
+    align-items:center;
+  }
+  #search, #folderSelect, #typeSelect {
+    padding:8px 12px;
+    border:none;
+    border-radius:8px;
+    font-size:1em;
+    outline:none;
+  }
+  #folderSelect, #typeSelect {
+    background:#fff;
+    color:#333;
+  }
+  #progressBarContainer {
+    position:fixed;
+    top:0;
+    left:0;
+    width:100%;
+    height:4px;
+    background:rgba(255,255,255,0.1);
+    z-index:999;
+  }
+  #progressBar {
+    height:4px;
+    width:0%;
+    background:#ff66ff;
+    transition:width 0.3s;
+  }
+  .container {
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(260px,1fr));
+    gap:18px;
+    padding:25px;
+  }
+  .card {
+    background:#250045;
+    border-radius:12px;
+    box-shadow:0 5px 10px rgba(0,0,0,0.3);
+    overflow:hidden;
+    display:flex;
+    flex-direction:column;
+    transition:transform 0.2s,box-shadow 0.2s;
+  }
+  .card:hover {
+    transform:scale(1.03);
+    box-shadow:0 8px 18px rgba(0,0,0,0.5);
+  }
+  .card img {
+    width:100%;
+    height:380px;
+    object-fit:cover;
+    background:#111;
+  }
+  .card-content {
+    padding:12px 15px;
+    flex:1;
+    display:flex;
+    flex-direction:column;
+  }
+  .card h3 {
+    font-size:1em;
+    margin:8px 0 5px;
+  }
+  .card p {
+    margin:0;
+    font-size:0.9em;
+    color:#ccc;
+  }
+  .download {
+    margin-top:auto;
+    text-align:center;
+  }
+  .download a {
+    display:inline-block;
+    margin-top:10px;
+    padding:8px 15px;
+    background:#9b30ff;
+    border-radius:6px;
+    color:#fff;
+    text-decoration:none;
+    transition:background 0.2s;
+  }
+  .download a:hover {
+    background:#b84fff;
+  }
+  .empty {
+    text-align:center;
+    padding:50px;
+    color:#aaa;
+  }
+  @media(max-width:600px){
+    header {flex-direction:column;align-items:flex-start;gap:10px;}
+    .controls {flex-direction:column;width:100%;}
+    #search,#folderSelect,#typeSelect {width:100%;}
+  }
 </style>
 </head>
 <body>
@@ -52,7 +154,6 @@
 
 <script>
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwSoVNuzbgC82WJ9UzSU-nCIo4JIiP1Av-qPdpjWzbcC4LJPrMwooQVfCFkotbL2voVfA/exec";
-const OMDB_API_KEY = "406b9b64";
 const TMDB_API_KEY = "d15ed461116703666fe13069e7f5341c";
 const posterCache = {};
 
@@ -60,65 +161,48 @@ function setProgress(percent){
   document.getElementById("progressBar").style.width = percent + "%";
 }
 
-function detectType(title) {
+function detectType(title){
   return /S\d{1,2}E\d{1,2}/i.test(title) ? "tv" : "movie";
 }
 
 function cleanTitleForSearch(title){
   return title
     .replace(/\(.*?\)/,"")
-    .replace(/S\d{1,2}E\d{1,2}.*/i,"") // hapus episode dari judul
-    .replace(/\b\d{4}\b/,"") // hapus tahun
+    .replace(/S\d{1,2}E\d{1,2}.*/i,"")
+    .replace(/\b\d{4}\b/,"")
     .replace(/\b(1080p|720p|WEB[-_. ]?DL|WEBRip|HDRip|BluRay|NF|AMZN|DDP5\.1|H\.264|x264|UCUP|APRT|Atmos)\b/gi,"")
     .replace(/\./g," ")
     .replace(/\s{2,}/g," ")
     .trim();
 }
 
-async function getPoster(title, filterType="all"){
-  if (posterCache[title]) return posterCache[title];
+async function getPoster(title, type="movie"){
+  if(posterCache[title]) return posterCache[title];
   const cleanTitle = cleanTitleForSearch(title);
 
-  // 1️⃣ OMDb API
   try {
-    const omdbRes = await fetch(`https://www.omdbapi.com/?t=${encodeURIComponent(cleanTitle)}&apikey=${OMDB_API_KEY}`);
-    const omdbData = await omdbRes.json();
-    if (omdbData.Poster && omdbData.Poster !== "N/A") {
-      posterCache[title] = omdbData.Poster;
-      return omdbData.Poster;
+    const endpoint = type === "tv" ? "tv" : "movie";
+    const url = `https://api.themoviedb.org/3/search/${endpoint}?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(cleanTitle)}`;
+    const res = await fetch(url);
+    const data = await res.json();
+
+    if (data.results && data.results.length > 0 && data.results[0].poster_path) {
+      const posterUrl = `https://image.tmdb.org/t/p/w500${data.results[0].poster_path}`;
+      posterCache[title] = posterUrl;
+      return posterUrl;
+    } else {
+      console.warn("No TMDb poster for:", cleanTitle);
     }
-  } catch (e) {}
+  } catch (err) {
+    console.error("TMDb fetch error:", err);
+  }
 
-  // 2️⃣ TMDb API
-  try {
-    let moviePoster = null, tvPoster = null;
-
-    const movieRes = await fetch(`https://api.themoviedb.org/3/search/movie?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(cleanTitle)}`);
-    const movieData = await movieRes.json();
-    if (movieData.results?.length > 0) moviePoster = movieData.results[0].poster_path;
-
-    const tvRes = await fetch(`https://api.themoviedb.org/3/search/tv?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(cleanTitle)}`);
-    const tvData = await tvRes.json();
-    if (tvData.results?.length > 0) tvPoster = tvData.results[0].poster_path;
-
-    let posterPath = null;
-    if (filterType === "movie") posterPath = moviePoster;
-    else if (filterType === "tv") posterPath = tvPoster;
-    else posterPath = moviePoster || tvPoster;
-
-    if (posterPath) {
-      const url = `https://image.tmdb.org/t/p/w500${posterPath}`;
-      posterCache[title] = url;
-      return url;
-    }
-  } catch (e) {}
-
-  // default placeholder
-  posterCache[title] = "https://via.placeholder.com/300x450?text=No+Image";
-  return posterCache[title];
+  const fallback = "https://via.placeholder.com/300x450/000000/FFFFFF?text=No+Poster";
+  posterCache[title] = fallback;
+  return fallback;
 }
 
-async function fetchMovies(url=SCRIPT_URL){
+async function fetchMovies(url = SCRIPT_URL){
   setProgress(10);
   const res = await fetch(url);
   setProgress(40);
@@ -126,7 +210,7 @@ async function fetchMovies(url=SCRIPT_URL){
   setProgress(70);
   await renderMovies(files);
   setProgress(100);
-  setTimeout(()=>setProgress(0),800);
+  setTimeout(() => setProgress(0), 800);
 }
 
 async function renderMovies(files){
@@ -160,7 +244,7 @@ async function renderMovies(files){
     const card = document.createElement("div");
     card.className = "card";
     card.innerHTML = `
-      <img src="${poster}" alt="${displayName}">
+      <img src="${poster}" alt="${displayName}" loading="lazy">
       <div class="card-content">
         <h3>${displayName}</h3>
         <p>${file.size} — ${file.folderName}</p>
