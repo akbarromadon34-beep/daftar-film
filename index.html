@@ -188,25 +188,44 @@ async function fetchMovies(url = SCRIPT_URL) {
   setTimeout(() => setProgress(0), 800);
 }
 
+// 🔹 Fungsi gabungan OMDb + TMDB (film + series)
 async function getPoster(title) {
   const cleanTitle = title.replace(/\(.*?\)/, "").trim();
 
+  // 🔸 1. Coba TMDB movie + TV
+  try {
+    const tmdbBase = "https://api.themoviedb.org/3";
+    const tmdbImage = "https://image.tmdb.org/t/p/w500";
+
+    // Cari di movie
+    let res = await fetch(`${tmdbBase}/search/movie?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(cleanTitle)}`);
+    let data = await res.json();
+
+    // Kalau kosong → cari di TV
+    if (!data.results || data.results.length === 0) {
+      res = await fetch(`${tmdbBase}/search/tv?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(cleanTitle)}`);
+      data = await res.json();
+    }
+
+    if (data.results && data.results.length > 0) {
+      const posterPath = data.results[0].poster_path;
+      if (posterPath) return `${tmdbImage}${posterPath}`;
+    }
+  } catch (e) {
+    console.warn("TMDB error:", e);
+  }
+
+  // 🔸 2. Jika TMDB gagal → fallback ke OMDb
   try {
     const omdbRes = await fetch(`https://www.omdbapi.com/?t=${encodeURIComponent(cleanTitle)}&apikey=${OMDB_API_KEY}`);
     const omdbData = await omdbRes.json();
     if (omdbData.Poster && omdbData.Poster !== "N/A") return omdbData.Poster;
-  } catch (e) {}
+  } catch (e) {
+    console.warn("OMDb error:", e);
+  }
 
-  try {
-    const tmdbRes = await fetch(`https://api.themoviedb.org/3/search/movie?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(cleanTitle)}`);
-    const tmdbData = await tmdbRes.json();
-    if (tmdbData.results && tmdbData.results.length > 0) {
-      const posterPath = tmdbData.results[0].poster_path;
-      if (posterPath) return `https://image.tmdb.org/t/p/w500${posterPath}`;
-    }
-  } catch (e) {}
-
-  return "https://via.placeholder.com/300x450?text=No+Image";
+  // 🔸 3. Jika semuanya gagal
+  return "https://via.placeholder.com/300x450?text=No+Poster";
 }
 
 async function renderMovies(files) {
