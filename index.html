@@ -51,15 +51,16 @@ const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwSoVNuzbgC82WJ9UzSU
 const OMDB_API_KEY = "406b9b64";
 const TMDB_API_KEY = "d15ed461116703666fe13069e7f5341c";
 
-// ==== GDToT Config ====
-const GDTOT_EMAIL = "adwik2860@gmail.com"; // Ganti dgn email GDToT kamu
-const GDTOT_API_KEY = "kVTKqsfQlU39uQnqh2Zb4LQwneUNU"; // Ganti dgn API key kamu
+// ==== GDToT Config (via Proxy) ====
+const GDTOT_EMAIL = "adwik2860@gmail.com";
+const GDTOT_API_KEY = "kVTKqsfQlU39uQnqh2Zb4LQwneUNU";
+const GDTOT_PROXY = "https://script.google.com/macros/s/AKfycbxBMFUg2Kvimlsr2rfzKmH2FfBENTy-z_NcFJZFT6gTAYtjjplhQZ50GXdeIRJlVdROPA/exec";
 
 const posterCache = {};
 
 function setProgress(percent){document.getElementById("progressBar").style.width=percent+"%";}
 
-// === GDToT Mirror (dengan pengecekan error) ===
+// === Mirror ke GDToT via Proxy ===
 async function mirrorToGDTot(url) {
   const cache = JSON.parse(localStorage.getItem("gd_cache") || "{}");
   if (cache[url]) return cache[url];
@@ -70,7 +71,7 @@ async function mirrorToGDTot(url) {
     body.append("api_token", GDTOT_API_KEY);
     body.append("url", url);
 
-    const res = await fetch("https://new.gdtot.com/api/upload/link", {
+    const res = await fetch(GDTOT_PROXY, {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body
@@ -81,25 +82,21 @@ async function mirrorToGDTot(url) {
     try {
       data = JSON.parse(text);
     } catch {
-      console.warn("⚠️ GDToT respon bukan JSON:", text);
+      console.warn("⚠️ GDToT Proxy: respon bukan JSON:", text);
       return url;
     }
 
-    // Validasi respon
     if (data.status === "success" && data.url) {
       cache[url] = data.url;
       localStorage.setItem("gd_cache", JSON.stringify(cache));
       console.log("✅ Mirror berhasil:", data.url);
       return data.url;
-    } else if (data.status === "error") {
-      console.warn(`⚠️ GDToT error: ${data.message || 'unknown error'}`);
-      return url;
     } else {
-      console.warn("⚠️ Mirror gagal:", data);
+      console.warn("⚠️ Mirror gagal:", data.message || JSON.stringify(data));
       return url;
     }
   } catch (err) {
-    console.error("❌ Error koneksi ke GDToT:", err);
+    console.error("❌ Error koneksi ke GDToT Proxy:", err);
     return url;
   }
 }
@@ -194,7 +191,6 @@ async function renderMovies(files){
     const displayName=year?`${title} (${year})`:title;
     const poster = await getPoster(displayName);
 
-    // === Mirror otomatis ke GDToT ===
     const gdLink = await mirrorToGDTot(file.url);
 
     const card=document.createElement("div");
