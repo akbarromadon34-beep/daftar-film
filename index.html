@@ -52,8 +52,25 @@ const OMDB_API_KEY = "406b9b64";
 const TMDB_API_KEY = "d15ed461116703666fe13069e7f5341c";
 const posterCache = {};
 
+// 🔧 Fungsi progress bar
 function setProgress(percent){document.getElementById("progressBar").style.width=percent+"%";}
 
+// 🔧 Ekstrak ID Google Drive
+function extractDriveId(url) {
+  if (!url) return null;
+  const patterns = [
+    /\/d\/([^/]+)/,        
+    /id=([^&]+)/,          
+    /\/uc\?export=download&id=([^&]+)/ 
+  ];
+  for (const pattern of patterns) {
+    const match = url.match(pattern);
+    if (match) return match[1];
+  }
+  return null;
+}
+
+// 🔧 Ambil data file dari Apps Script
 async function fetchMovies(url=SCRIPT_URL){
   setProgress(10);
   const res=await fetch(url);
@@ -65,27 +82,25 @@ async function fetchMovies(url=SCRIPT_URL){
   setTimeout(()=>setProgress(0),800);
 }
 
+// 🔧 Bersihkan judul untuk pencarian poster
 function cleanTitleForSearch(title){
-  // Hilangkan info resolusi, codec, provider, dan ekstensi
   let clean = title
     .replace(/\.[^/.]+$/, "")
     .replace(/\(.*?\)/, "")
     .replace(/\b(1080p|720p|2160p|4K|WEB[-_. ]?DL|WEBRip|HDRip|BluRay|NF|AMZN|DDP5\.1|H\.264|x264|UCUP|APRT|Atmos|UCU[P]?|NFWEB)\b/gi, "")
     .replace(/\s+/g, " ")
     .trim();
-
-  // Jika ada episode (SxxExx), hapus bagian episode
   if (/\bS\d{1,2}E\d{1,2}\b/i.test(clean)) {
     clean = clean.replace(/\bS\d{1,2}E\d{1,2}.*/i, "").trim();
   }
   return clean;
 }
 
+// 🔧 Ambil poster dari OMDb atau TMDb
 async function getPoster(title){
   if(posterCache[title]) return posterCache[title];
   const cleanTitle = cleanTitleForSearch(title);
 
-  // 1️⃣ Coba OMDb — cocok untuk film (gunakan judul & tahun jika ada)
   try {
     const omdbRes = await fetch(`https://www.omdbapi.com/?t=${encodeURIComponent(cleanTitle)}&apikey=${OMDB_API_KEY}`);
     const omdbData = await omdbRes.json();
@@ -95,7 +110,6 @@ async function getPoster(title){
     }
   } catch(e) {}
 
-  // 2️⃣ Coba TMDb Movie
   try {
     const movieRes = await fetch(`https://api.themoviedb.org/3/search/movie?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(cleanTitle)}`);
     const movieData = await movieRes.json();
@@ -109,7 +123,6 @@ async function getPoster(title){
     }
   } catch(e) {}
 
-  // 3️⃣ Jika gagal, coba TMDb TV (series)
   try {
     const tvRes = await fetch(`https://api.themoviedb.org/3/search/tv?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(cleanTitle)}`);
     const tvData = await tvRes.json();
@@ -123,11 +136,11 @@ async function getPoster(title){
     }
   } catch(e) {}
 
-  // 4️⃣ Fallback placeholder
   posterCache[title] = "https://via.placeholder.com/300x450?text=No+Image";
   return posterCache[title];
 }
 
+// 🔧 Render tampilan movie
 async function renderMovies(files){
   const container=document.getElementById("movies");
   container.innerHTML="";
@@ -147,9 +160,13 @@ async function renderMovies(files){
     let title="",year="";
     if(yearIndex!==-1){title=parts.slice(0,yearIndex).join(" ");year=parts[yearIndex];}
     else{title=cleanName.replace(/\./g," ");}
-    const displayName=year?`${title} (${year})`:title;
 
+    const displayName=year?`${title} (${year})`:title;
     const poster = await getPoster(displayName);
+
+    // 🔗 Buat link GDToT otomatis
+    const driveId = extractDriveId(file.url);
+    const gdLink = driveId ? `https://new.gdtot.com/file/${driveId}` : file.url;
 
     const card=document.createElement("div");
     card.className="card-wrapper";
@@ -161,7 +178,7 @@ async function renderMovies(files){
         <h3>${displayName}</h3>
         <p>${file.size} — ${file.folderName}</p>
         <div class="download">
-          <a href="${file.url}" target="_blank">⬇️ Download</a>
+          <a href="${gdLink}" target="_blank">⬇️ Download</a>
         </div>
       </div>
     `;
@@ -170,6 +187,7 @@ async function renderMovies(files){
   }
 }
 
+// 🔍 Search Filter
 document.getElementById("search").addEventListener("input",e=>{
   const val=e.target.value.toLowerCase();
   document.querySelectorAll(".card").forEach(card=>{
@@ -177,12 +195,14 @@ document.getElementById("search").addEventListener("input",e=>{
   });
 });
 
+// 📂 Folder Filter
 document.getElementById("folderSelect").addEventListener("change",async e=>{
   const folderId=e.target.value;
   const url=folderId?`${SCRIPT_URL}?folderId=${folderId}`:SCRIPT_URL;
   await fetchMovies(url);
 });
 
+// 🚀 Load Awal
 fetchMovies();
 </script>
 </body>
